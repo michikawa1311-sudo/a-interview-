@@ -31,6 +31,7 @@ create table if not exists interview_sessions (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects (id) on delete cascade,
   status text not null default 'in_progress' check (status in ('in_progress', 'completed')),
+  progress int not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -115,3 +116,12 @@ create policy "管理者は自分の案件の記事のみ閲覧可能" on genera
 -- interview_sessions / interview_messages / generated_articles への
 -- insert/update は、管理画面からは行わない(回答者向けAPIがservice role keyで行う)ため
 -- ポリシーを用意していない。これにより、ブラウザから直接これらを書き換えることはできない。
+
+-- ============================================================
+-- 追記マイグレーション: interview_sessions に progress 列を追加(進捗バー表示のため)
+--
+-- すでにテーブルを作成済みの環境では、このファイルを最初から再実行すると
+-- 「create policy」の部分でエラーになるため、下の1文だけをSQL Editorで実行してください。
+-- (新規にこのファイルを実行する場合は上のcreate table文に含まれているため不要です)
+-- ============================================================
+alter table interview_sessions add column if not exists progress int not null default 0;

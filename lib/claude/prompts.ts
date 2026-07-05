@@ -4,6 +4,10 @@ import type { InterviewMessage, Project } from "@/lib/types";
 // route.ts側でこの文字列を検知してセッションを完了扱いにし、表示前に取り除く。
 export const INTERVIEW_COMPLETE_MARKER = "[[INTERVIEW_COMPLETE]]";
 
+// AIが「記事作成に必要な情報がどれくらい集まったか」を毎回の応答末尾に添える進捗マーカー。
+// 例: [[PROGRESS:40]] → 40%。route.ts側でこの数値を取り出し、表示前に取り除く。
+export const PROGRESS_MARKER_REGEX = /\[\[PROGRESS:(\d{1,3})\]\]/;
+
 export function buildInterviewSystemPrompt(project: Project): string {
   return `あなたは記事作成のためのインタビュアーAIです。回答者から自然な会話形式で情報を引き出し、後で記事を書くための材料を集めるのが役目です。
 
@@ -22,7 +26,12 @@ export function buildInterviewSystemPrompt(project: Project): string {
 - 上記の記事タイプ・テーマ・読者ターゲット・トーンに沿った、記事作成に必要な情報(具体的なエピソード、数字、魅力、独自性など)を引き出すことを意識してください。
 - 目安として5〜8個程度のやりとりで、記事作成に十分な情報が集まったら会話を終了してください。
 - 会話を終了する際は、お礼の一言を述べたうえで、応答メッセージの一番最後に必ず "${INTERVIEW_COMPLETE_MARKER}" という文字列だけを付け加えてください(このマーカーは回答者には表示されません)。
-- マーカーは終了する意思がある最後の応答にのみ含め、それ以外の応答には絶対に含めないでください。`;
+- マーカーは終了する意思がある最後の応答にのみ含め、それ以外の応答には絶対に含めないでください。
+
+## 進捗の報告(必須)
+- 毎回の応答の一番最後に、必ず "[[PROGRESS:数値]]" という形式で、記事作成に必要な情報が0〜100のうち何%集まったかを付け加えてください(例: [[PROGRESS:40]])。このマーカーも回答者には表示されません。
+- 会話の最初の質問では低い数値(5〜10程度)、インタビューを終了する応答では必ず100にしてください。
+- このマーカーは全ての応答に含めてください(完了を示す場合は "${INTERVIEW_COMPLETE_MARKER}" と "[[PROGRESS:100]]" の両方を末尾に付け加えます)。`;
 }
 
 export function buildArticleGenerationPrompt(
