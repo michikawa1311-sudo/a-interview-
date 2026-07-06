@@ -76,11 +76,17 @@ async function getProjectByToken(
   supabase: ReturnType<typeof createAdminSupabaseClient>,
   token: string
 ) {
-  const { data: project } = await supabase
+  const { data: project, error } = await supabase
     .from("projects")
     .select("*")
     .eq("share_token", token)
     .single();
+
+  if (error) {
+    // 案件が本当に存在しない場合だけでなく、Supabaseの環境変数(URL/service role key)が
+    // 誤っている場合もここでエラーになる。原因切り分けのためログに残す。
+    console.error("[getProjectByToken] Supabaseエラー:", error.message, "token:", token);
+  }
 
   return project;
 }

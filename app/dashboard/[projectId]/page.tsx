@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import InterviewLink from "./InterviewLink";
 import GenerateArticleButton from "./GenerateArticleButton";
 import CopyButton from "./CopyButton";
+import DeleteProjectButton from "./DeleteProjectButton";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "回答待ち(まだ誰も回答していません)",
@@ -61,13 +62,16 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">
-          {project.article_type} / {project.theme}
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {STATUS_LABEL[project.status] ?? project.status}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">
+            {project.article_type} / {project.theme}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {STATUS_LABEL[project.status] ?? project.status}
+          </p>
+        </div>
+        <DeleteProjectButton projectId={project.id} />
       </div>
 
       <section className="rounded-lg border border-gray-200 bg-white p-5">
