@@ -155,7 +155,7 @@ export default function InterviewChat({ token }: { token: string }) {
                   value={editingContent}
                   onChange={(e) => setEditingContent(e.target.value)}
                   rows={3}
-                  className="w-full rounded-2xl border border-indigo-300 px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-2xl border border-indigo-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
                 />
                 <div className="flex justify-end gap-2">
                   <button
@@ -216,7 +216,7 @@ export default function InterviewChat({ token }: { token: string }) {
             onChange={(e) => setInput(e.target.value)}
             disabled={isSending}
             placeholder="メッセージを入力..."
-            className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
           />
           <button
             type="submit"

@@ -26,7 +26,7 @@ export default function ArticleTypeFields() {
           required
           value={articleType}
           onChange={(e) => setArticleType(e.target.value as (typeof ARTICLE_TYPES)[number])}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
         >
           {ARTICLE_TYPES.map((type) => (
             <option key={type} value={type}>
@@ -45,7 +45,7 @@ export default function ArticleTypeFields() {
           name="theme"
           required
           placeholder={themeField.placeholder}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
         />
       </div>
     </>

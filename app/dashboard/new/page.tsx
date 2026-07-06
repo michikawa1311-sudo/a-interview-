@@ -18,7 +18,7 @@ export default function NewProjectPage() {
             name="target_reader"
             required
             placeholder="例: 20代〜30代の女性、カフェ巡りが好きな人"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
           />
         </div>
 
@@ -31,7 +31,7 @@ export default function NewProjectPage() {
             name="tone"
             required
             placeholder="例: 親しみやすく丁寧、カジュアル 等"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
           />
         </div>
 
@@ -47,7 +47,7 @@ export default function NewProjectPage() {
             step={100}
             required
             placeholder="例: 1500"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
           />
         </div>
 
