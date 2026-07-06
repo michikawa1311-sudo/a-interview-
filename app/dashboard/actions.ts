@@ -55,21 +55,3 @@ export async function createProject(formData: FormData) {
 
   redirect(`/dashboard/${project.id}`);
 }
-
-export async function deleteProject(projectId: string) {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { error } = await supabase.from("projects").delete().eq("id", projectId);
-
-  if (error) {
-    throw new Error(`案件の削除に失敗しました: ${error.message}`);
-  }
-}

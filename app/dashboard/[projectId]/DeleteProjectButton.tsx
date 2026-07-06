@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteProject } from "../actions";
 
 export default function DeleteProjectButton({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -18,14 +17,16 @@ export default function DeleteProjectButton({ projectId }: { projectId: string }
     setIsDeleting(true);
     setError(null);
 
-    try {
-      await deleteProject(projectId);
-      router.push("/dashboard");
-      router.refresh();
-    } catch {
+    const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+
+    if (!res.ok) {
       setError("削除に失敗しました。もう一度お試しください。");
       setIsDeleting(false);
+      return;
     }
+
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (
