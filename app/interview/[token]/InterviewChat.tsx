@@ -183,7 +183,7 @@ export default function InterviewChat({ token }: { token: string }) {
                     type="button"
                     onClick={() => startEditing(m)}
                     aria-label="この回答を編集する"
-                    className="mb-1 hidden text-xs text-gray-400 hover:text-gray-600 group-hover:inline"
+                    className="mb-1 shrink-0 whitespace-nowrap text-xs font-medium text-indigo-500 underline underline-offset-2 hover:text-indigo-700"
                   >
                     編集
                   </button>

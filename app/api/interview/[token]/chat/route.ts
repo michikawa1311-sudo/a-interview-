@@ -28,9 +28,9 @@ function toClaudeMessages(messages: Pick<InterviewMessage, "role" | "content">[]
   return claudeMessages;
 }
 
-// システムプロンプトが想定しているやりとりの目安回数(5〜8回)の中間値。
+// システムプロンプトが想定しているやりとりの目安回数(7〜10回)の中間値。
 // AIが進捗マーカーを付け忘れた場合の最低保証ラインの計算に使う。
-const EXPECTED_TOTAL_TURNS = 7;
+const EXPECTED_TOTAL_TURNS = 8;
 
 async function askClaude(
   project: Project,
