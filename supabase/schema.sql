@@ -85,6 +85,9 @@ create policy "管理者は自分の案件のみ作成可能" on projects
 create policy "管理者は自分の案件のみ更新可能" on projects
   for update using (auth.uid() = owner_id);
 
+create policy "管理者は自分の案件のみ削除可能" on projects
+  for delete using (auth.uid() = owner_id);
+
 create policy "管理者は自分の案件のセッションのみ閲覧可能" on interview_sessions
   for select using (
     exists (
@@ -125,3 +128,11 @@ create policy "管理者は自分の案件の記事のみ閲覧可能" on genera
 -- (新規にこのファイルを実行する場合は上のcreate table文に含まれているため不要です)
 -- ============================================================
 alter table interview_sessions add column if not exists progress int not null default 0;
+
+-- ============================================================
+-- 追記マイグレーション: projects に削除ポリシーを追加(案件削除機能のため)
+--
+-- 上と同じ理由で、下の1文だけをSQL Editorで実行してください。
+-- ============================================================
+create policy "管理者は自分の案件のみ削除可能" on projects
+  for delete using (auth.uid() = owner_id);
