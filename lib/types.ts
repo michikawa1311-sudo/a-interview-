@@ -23,6 +23,7 @@ export type InterviewSession = {
   id: string;
   project_id: string;
   status: InterviewSessionStatus;
+  progress: number;
   created_at: string;
 };
 

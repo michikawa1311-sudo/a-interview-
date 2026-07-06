@@ -9,9 +9,13 @@ export default function InterviewChat({ token }: { token: string }) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [completed, setCompleted] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +34,7 @@ export default function InterviewChat({ token }: { token: string }) {
       const data = await res.json();
       setMessages(data.messages ?? []);
       setCompleted(data.sessionStatus === "completed");
+      setProgress(data.progress ?? 0);
       setLoadState("ready");
     }
 
@@ -66,6 +71,42 @@ export default function InterviewChat({ token }: { token: string }) {
     const data = await res.json();
     setMessages((prev) => [...prev, data.userMessage, data.assistantMessage]);
     setCompleted(data.completed);
+    setProgress(data.progress ?? 0);
+  }
+
+  function startEditing(message: InterviewMessage) {
+    setEditingMessageId(message.id);
+    setEditingContent(message.content);
+  }
+
+  function cancelEditing() {
+    setEditingMessageId(null);
+    setEditingContent("");
+  }
+
+  async function saveEditing() {
+    const content = editingContent.trim();
+    if (!editingMessageId || !content || isSavingEdit) return;
+
+    setIsSavingEdit(true);
+    setError(null);
+
+    const res = await fetch(`/api/interview/${token}/chat`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageId: editingMessageId, content }),
+    });
+
+    setIsSavingEdit(false);
+
+    if (!res.ok) {
+      setError("回答の更新に失敗しました。もう一度お試しください。");
+      return;
+    }
+
+    const data = await res.json();
+    setMessages((prev) => prev.map((m) => (m.id === data.message.id ? data.message : m)));
+    cancelEditing();
   }
 
   if (loadState === "loading") {
@@ -92,24 +133,72 @@ export default function InterviewChat({ token }: { token: string }) {
     <div className="mx-auto flex h-screen max-w-2xl flex-col">
       <header className="border-b border-gray-200 px-4 py-4">
         <h1 className="text-lg font-bold text-gray-900">A.Interview</h1>
-        <p className="text-sm text-gray-500">AIチャットに答えるだけでインタビューが完了します</p>
+        <p className="mb-3 text-sm text-gray-500">AIチャットに答えるだけでインタビューが完了します</p>
+        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-2 rounded-full bg-indigo-600 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="mt-1 text-right text-xs text-gray-400">回答の進み具合: 約{progress}%</p>
       </header>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`group flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
-            <div
-              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
-                m.role === "user"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {m.content}
-            </div>
+            {editingMessageId === m.id ? (
+              <div className="w-[80%] space-y-2">
+                <textarea
+                  value={editingContent}
+                  onChange={(e) => setEditingContent(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-2xl border border-indigo-300 px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    disabled={isSavingEdit}
+                    className="rounded-full px-3 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveEditing}
+                    disabled={isSavingEdit || !editingContent.trim()}
+                    className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                  >
+                    {isSavingEdit ? "保存中..." : "保存する"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex max-w-[80%] items-end gap-1">
+                {m.role === "user" && !completed && (
+                  <button
+                    type="button"
+                    onClick={() => startEditing(m)}
+                    aria-label="この回答を編集する"
+                    className="mb-1 shrink-0 whitespace-nowrap text-xs font-medium text-indigo-500 underline underline-offset-2 hover:text-indigo-700"
+                  >
+                    編集
+                  </button>
+                )}
+                <div
+                  className={`whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
+                    m.role === "user"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {m.content}
+                </div>
+              </div>
+            )}
           </div>
         ))}
         {completed && (

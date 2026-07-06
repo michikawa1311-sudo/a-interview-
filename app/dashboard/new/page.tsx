@@ -1,4 +1,5 @@
 import { createProject } from "../actions";
+import ArticleTypeFields from "./ArticleTypeFields";
 
 export default function NewProjectPage() {
   return (
@@ -6,31 +7,7 @@ export default function NewProjectPage() {
       <h1 className="mb-6 text-xl font-bold text-gray-900">新規インタビュー案件</h1>
 
       <form action={createProject} className="max-w-lg space-y-5 rounded-lg border border-gray-200 bg-white p-6">
-        <div>
-          <label htmlFor="article_type" className="mb-1 block text-sm font-medium text-gray-700">
-            記事タイプ
-          </label>
-          <input
-            id="article_type"
-            name="article_type"
-            required
-            placeholder="例: 店舗紹介 / 個人インタビュー / 商品紹介 / ブログ / アフィリエイト記事"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="theme" className="mb-1 block text-sm font-medium text-gray-700">
-            テーマ
-          </label>
-          <input
-            id="theme"
-            name="theme"
-            required
-            placeholder="例: 渋谷の新規オープンカフェ"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-          />
-        </div>
+        <ArticleTypeFields />
 
         <div>
           <label htmlFor="target_reader" className="mb-1 block text-sm font-medium text-gray-700">
