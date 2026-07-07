@@ -295,5 +295,46 @@ export async function PATCH(
     return NextResponse.json({ error: "回答の更新に失敗しました。" }, { status: 500 });
   }
 
-  return NextResponse.json({ message: updatedMessage });
+  // 編集した回答より後のやり取りは、古い(誤った)内容をもとにAIが考えたものなので、
+  // 一度破棄したうえで、編集後の内容をもとにAIの返答を考え直す。
+  await supabase
+    .from("interview_messages")
+    .delete()
+    .eq("session_id", session.id)
+    .gt("created_at", updatedMessage.created_at);
+
+  const { data: history } = await supabase
+    .from("interview_messages")
+    .select("*")
+    .eq("session_id", session.id)
+    .order("created_at", { ascending: true });
+
+  const { content, completed, progress } = await askClaude(project, history ?? [], session.progress);
+
+  const { data: newAssistantMessage, error: assistantInsertError } = await supabase
+    .from("interview_messages")
+    .insert({ session_id: session.id, role: "assistant", content })
+    .select("*")
+    .single();
+
+  if (assistantInsertError || !newAssistantMessage) {
+    return NextResponse.json({ error: "AI応答の再生成に失敗しました。" }, { status: 500 });
+  }
+
+  if (completed) {
+    await supabase
+      .from("interview_sessions")
+      .update({ status: "completed", progress })
+      .eq("id", session.id);
+    await supabase.from("projects").update({ status: "completed" }).eq("id", project.id);
+  } else {
+    await supabase.from("interview_sessions").update({ progress }).eq("id", session.id);
+  }
+
+  return NextResponse.json({
+    message: updatedMessage,
+    assistantMessage: newAssistantMessage,
+    completed,
+    progress,
+  });
 }
