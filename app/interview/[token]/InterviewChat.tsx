@@ -5,6 +5,8 @@ import type { InterviewMessage } from "@/lib/types";
 
 type LoadState = "loading" | "ready" | "not_found" | "error";
 
+const OPTIMISTIC_ID_PREFIX = "optimistic-";
+
 export default function InterviewChat({ token }: { token: string }) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
@@ -17,6 +19,7 @@ export default function InterviewChat({ token }: { token: string }) {
   const [editingContent, setEditingContent] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -43,16 +46,36 @@ export default function InterviewChat({ token }: { token: string }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isSending]);
 
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
+  function resizeTextarea() {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  async function sendMessage() {
     const message = input.trim();
     if (!message || isSending || completed) return;
+
+    // AIの返答を待たず、まず自分の発言だけをすぐに画面へ反映する。
+    const optimisticId = `${OPTIMISTIC_ID_PREFIX}${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: optimisticId,
+        session_id: "",
+        role: "user",
+        content: message,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
     setIsSending(true);
     setError(null);
     setInput("");
+    requestAnimationFrame(resizeTextarea);
 
     const res = await fetch(`/api/interview/${token}/chat`, {
       method: "POST",
@@ -65,13 +88,31 @@ export default function InterviewChat({ token }: { token: string }) {
     if (!res.ok) {
       setError("送信に失敗しました。もう一度お試しください。");
       setInput(message);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       return;
     }
 
     const data = await res.json();
-    setMessages((prev) => [...prev, data.userMessage, data.assistantMessage]);
+    setMessages((prev) => [
+      ...prev.filter((m) => m.id !== optimisticId),
+      data.userMessage,
+      data.assistantMessage,
+    ]);
     setCompleted(data.completed);
     setProgress(data.progress ?? 0);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    sendMessage();
+  }
+
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Shift+Enter / Ctrl+Enter は改行、Enter単体は送信。
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   }
 
   function startEditing(message: InterviewMessage) {
@@ -105,7 +146,16 @@ export default function InterviewChat({ token }: { token: string }) {
     }
 
     const data = await res.json();
-    setMessages((prev) => prev.map((m) => (m.id === data.message.id ? data.message : m)));
+
+    // 編集した回答より後のやり取りは、古い内容をもとにAIが考えたものなので
+    // サーバー側で破棄・再生成されている。フロント側の表示もそれに合わせて置き換える。
+    setMessages((prev) => {
+      const index = prev.findIndex((m) => m.id === editingMessageId);
+      if (index === -1) return prev;
+      return [...prev.slice(0, index), data.message, data.assistantMessage];
+    });
+    setCompleted(data.completed ?? false);
+    setProgress(data.progress ?? 0);
     cancelEditing();
   }
 
@@ -178,7 +228,7 @@ export default function InterviewChat({ token }: { token: string }) {
               </div>
             ) : (
               <div className="flex max-w-[80%] items-end gap-1">
-                {m.role === "user" && !completed && (
+                {m.role === "user" && !completed && !m.id.startsWith(OPTIMISTIC_ID_PREFIX) && (
                   <button
                     type="button"
                     onClick={() => startEditing(m)}
@@ -201,6 +251,13 @@ export default function InterviewChat({ token }: { token: string }) {
             )}
           </div>
         ))}
+        {isSending && (
+          <div className="flex justify-start">
+            <div className="rounded-2xl bg-gray-100 px-4 py-2 text-sm text-gray-400">
+              AIが返答を考えています...
+            </div>
+          </div>
+        )}
         {completed && (
           <p className="rounded-md bg-green-50 px-4 py-3 text-center text-sm text-green-700">
             ご協力ありがとうございました。インタビューは終了です。
@@ -210,13 +267,19 @@ export default function InterviewChat({ token }: { token: string }) {
       </div>
 
       {!completed && (
-        <form onSubmit={handleSend} className="flex gap-2 border-t border-gray-200 p-4">
-          <input
+        <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-gray-200 p-4">
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              resizeTextarea();
+            }}
+            onKeyDown={handleInputKeyDown}
             disabled={isSending}
-            placeholder="メッセージを入力..."
-            className="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
+            rows={1}
+            placeholder="メッセージを入力...(Shift+EnterまたはCtrl+Enterで改行)"
+            className="max-h-40 flex-1 resize-none overflow-y-auto rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
           />
           <button
             type="submit"
