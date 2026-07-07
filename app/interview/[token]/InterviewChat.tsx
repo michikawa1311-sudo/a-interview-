@@ -39,6 +39,9 @@ export default function InterviewChat({ token }: { token: string }) {
       setCompleted(data.sessionStatus === "completed");
       setProgress(data.progress ?? 0);
       setLoadState("ready");
+      if (data.sessionStatus !== "completed") {
+        focusInput();
+      }
     }
 
     load().catch(() => setLoadState("error"));
@@ -53,6 +56,12 @@ export default function InterviewChat({ token }: { token: string }) {
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
+  }
+
+  // AIの返答が表示された後、毎回入力欄をクリックし直さなくて済むよう自動でフォーカスする。
+  // disabledが解除された直後の描画を待つため、次のフレームで実行する。
+  function focusInput() {
+    requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
   async function sendMessage() {
@@ -89,6 +98,7 @@ export default function InterviewChat({ token }: { token: string }) {
       setError("送信に失敗しました。もう一度お試しください。");
       setInput(message);
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      focusInput();
       return;
     }
 
@@ -100,6 +110,9 @@ export default function InterviewChat({ token }: { token: string }) {
     ]);
     setCompleted(data.completed);
     setProgress(data.progress ?? 0);
+    if (!data.completed) {
+      focusInput();
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -157,6 +170,9 @@ export default function InterviewChat({ token }: { token: string }) {
     setCompleted(data.completed ?? false);
     setProgress(data.progress ?? 0);
     cancelEditing();
+    if (!data.completed) {
+      focusInput();
+    }
   }
 
   if (loadState === "loading") {
