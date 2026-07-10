@@ -136,3 +136,47 @@ alter table interview_sessions add column if not exists progress int not null de
 -- ============================================================
 create policy "管理者は自分の案件のみ削除可能" on projects
   for delete using (auth.uid() = owner_id);
+
+-- ============================================================
+-- 追記マイグレーション: media_posts テーブルを追加
+-- (公開メディア「うちのトリマーさん」に掲載する記事)
+--
+-- すでにテーブルを作成済みの環境では、この下のブロック全体だけを
+-- SQL Editorで実行してください。
+--
+-- 生成記事(generated_articles)は再生成で上書きされるため、
+-- 公開時に本文をこのテーブルへコピーして固定する。公開後の修正はこちらを編集する。
+-- ============================================================
+create table if not exists media_posts (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users (id) on delete cascade,
+  project_id uuid references projects (id) on delete set null,
+  slug text not null unique,
+  title text not null,
+  trimmer_name text not null,
+  salon_name text not null,
+  area text not null,
+  instagram_url text,
+  website_url text,
+  content text not null,
+  status text not null default 'published' check (status in ('draft', 'published')),
+  published_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists media_posts_slug_idx on media_posts (slug);
+create index if not exists media_posts_area_idx on media_posts (area);
+
+alter table media_posts enable row level security;
+
+create policy "公開済み記事は誰でも閲覧可能" on media_posts
+  for select using (status = 'published' or auth.uid() = owner_id);
+
+create policy "管理者は自分の記事のみ作成可能" on media_posts
+  for insert with check (auth.uid() = owner_id);
+
+create policy "管理者は自分の記事のみ更新可能" on media_posts
+  for update using (auth.uid() = owner_id);
+
+create policy "管理者は自分の記事のみ削除可能" on media_posts
+  for delete using (auth.uid() = owner_id);
