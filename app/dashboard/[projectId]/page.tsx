@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -121,7 +122,17 @@ export default async function ProjectDetailPage({
       <section className="rounded-lg border border-gray-200 bg-white p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-900">生成記事</h2>
-          {article && <CopyButton text={article.content} label="記事をコピー" />}
+          {article && (
+            <div className="flex items-center gap-2">
+              <CopyButton text={article.content} label="記事をコピー" />
+              <Link
+                href={`/dashboard/${project.id}/publish`}
+                className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+              >
+                メディアに公開
+              </Link>
+            </div>
+          )}
         </div>
 
         {!canGenerate && !article && (

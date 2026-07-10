@@ -44,6 +44,27 @@ export type GeneratedArticle = {
   generated_at: string;
 };
 
+export type MediaPostStatus = "draft" | "published";
+
+// 公開メディア「うちのトリマーさん」に掲載する記事。
+// 生成記事は再生成で上書きされるため、公開時に本文をここへコピーして固定する。
+export type MediaPost = {
+  id: string;
+  owner_id: string;
+  project_id: string | null;
+  slug: string;
+  title: string;
+  trimmer_name: string;
+  salon_name: string;
+  area: string;
+  instagram_url: string | null;
+  website_url: string | null;
+  content: string;
+  status: MediaPostStatus;
+  published_at: string;
+  created_at: string;
+};
+
 // @supabase/ssr の createBrowserClient / createServerClient に渡す型。
 // MVPではテーブル定義を直接書く簡易版とし、Supabase CLIによる型自動生成は導入しない。
 // (Relationships は外部キーの型推論に使われるが、MVPでは空配列で問題ない)
@@ -75,6 +96,13 @@ export type Database = {
         Insert: Partial<GeneratedArticle> &
           Pick<GeneratedArticle, "project_id" | "content">;
         Update: Partial<GeneratedArticle>;
+        Relationships: [];
+      };
+      media_posts: {
+        Row: MediaPost;
+        Insert: Partial<MediaPost> &
+          Pick<MediaPost, "owner_id" | "slug" | "title" | "trimmer_name" | "salon_name" | "area" | "content">;
+        Update: Partial<MediaPost>;
         Relationships: [];
       };
     };
