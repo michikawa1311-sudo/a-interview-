@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { InterviewMessage } from "@/lib/types";
+import { getProfileFields } from "@/lib/interview-profile";
 
 type LoadState = "loading" | "ready" | "not_found" | "error";
 
@@ -12,6 +13,10 @@ export default function InterviewChat({ token }: { token: string }) {
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [completed, setCompleted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [needsProfile, setNeedsProfile] = useState(false);
+  const [articleType, setArticleType] = useState("");
+  const [profileValues, setProfileValues] = useState<Record<string, string>>({});
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,14 +43,44 @@ export default function InterviewChat({ token }: { token: string }) {
       setMessages(data.messages ?? []);
       setCompleted(data.sessionStatus === "completed");
       setProgress(data.progress ?? 0);
+      setNeedsProfile(data.needsProfile ?? false);
+      setArticleType(data.articleType ?? "");
       setLoadState("ready");
-      if (data.sessionStatus !== "completed") {
+      if (data.sessionStatus !== "completed" && !data.needsProfile) {
         focusInput();
       }
     }
 
     load().catch(() => setLoadState("error"));
   }, [token]);
+
+  async function submitProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (isSubmittingProfile) return;
+
+    setIsSubmittingProfile(true);
+    setError(null);
+
+    const res = await fetch(`/api/interview/${token}/chat`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile: profileValues }),
+    });
+
+    setIsSubmittingProfile(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "送信に失敗しました。もう一度お試しください。");
+      return;
+    }
+
+    const data = await res.json();
+    setMessages(data.messages ?? []);
+    setProgress(data.progress ?? 0);
+    setNeedsProfile(false);
+    focusInput();
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -209,6 +244,53 @@ export default function InterviewChat({ token }: { token: string }) {
         <p className="mt-1 text-right text-xs text-gray-400">回答の進み具合: 約{progress}%</p>
       </header>
 
+      {needsProfile ? (
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="mx-auto max-w-md">
+            <h2 className="mb-2 text-base font-bold text-gray-900">
+              インタビューの前に、基本情報のアンケートにご協力ください
+            </h2>
+            <p className="mb-5 text-sm text-gray-500">
+              記事のプロフィール欄などに使用します。「*」の付いた項目は必須です。
+            </p>
+
+            <form onSubmit={submitProfile} className="space-y-4">
+              {getProfileFields(articleType).map((field) => (
+                <div key={field.key}>
+                  <label
+                    htmlFor={`profile-${field.key}`}
+                    className="mb-1 block text-sm font-medium text-gray-700"
+                  >
+                    {field.label}
+                    {field.required && " *"}
+                  </label>
+                  <input
+                    id={`profile-${field.key}`}
+                    required={field.required}
+                    value={profileValues[field.key] ?? ""}
+                    onChange={(e) =>
+                      setProfileValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                    }
+                    placeholder={field.placeholder}
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+              ))}
+
+              <button
+                type="submit"
+                disabled={isSubmittingProfile}
+                className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+              >
+                {isSubmittingProfile
+                  ? "送信中...(最初の質問を準備しています)"
+                  : "回答してインタビューを始める"}
+              </button>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+            </form>
+          </div>
+        </div>
+      ) : (
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
         {messages.map((m) => (
           <div
@@ -275,14 +357,25 @@ export default function InterviewChat({ token }: { token: string }) {
           </div>
         )}
         {completed && (
-          <p className="rounded-md bg-green-50 px-4 py-3 text-center text-sm text-green-700">
-            ご協力ありがとうございました。インタビューは終了です。
-          </p>
+          <div className="space-y-3 rounded-md bg-green-50 px-4 py-4 text-sm text-green-800">
+            <p className="text-center font-semibold">
+              ご協力ありがとうございました。インタビューは以上で終了です。
+            </p>
+            <p className="text-center">このままブラウザを閉じていただいて大丈夫です。</p>
+            <div className="rounded-md bg-white/60 px-3 py-2 text-green-700">
+              <p className="mb-1 font-semibold">今後の流れ</p>
+              <p>
+                いただいた回答をもとに記事を作成し、内容を整えたうえで公開されます。
+                掲載内容のご確認や修正のご希望がありましたら、このリンクをお送りした担当者までお気軽にご連絡ください。
+              </p>
+            </div>
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
+      )}
 
-      {!completed && (
+      {!completed && !needsProfile && (
         <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-gray-200 p-4">
           <textarea
             ref={textareaRef}

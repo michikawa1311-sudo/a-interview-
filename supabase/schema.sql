@@ -32,6 +32,7 @@ create table if not exists interview_sessions (
   project_id uuid not null references projects (id) on delete cascade,
   status text not null default 'in_progress' check (status in ('in_progress', 'completed')),
   progress int not null default 0,
+  profile jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -156,6 +157,9 @@ create table if not exists media_posts (
   trimmer_name text not null,
   salon_name text not null,
   area text not null,
+  address text,
+  phone_number text,
+  tagline text,
   instagram_url text,
   website_url text,
   content text not null,
@@ -180,3 +184,18 @@ create policy "管理者は自分の記事のみ更新可能" on media_posts
 
 create policy "管理者は自分の記事のみ削除可能" on media_posts
   for delete using (auth.uid() = owner_id);
+
+-- ============================================================
+-- 追記マイグレーション: 事前アンケートと記事プロフィール用の列を追加
+--
+-- すでにテーブルを作成済みの環境では、下の4文だけをSQL Editorで実行してください。
+-- - interview_sessions.profile: インタビュー前の基本情報アンケートの回答(JSON)
+-- - media_posts.address / phone_number / tagline: 記事上部のプロフィールカードと予約ボタンに使用
+-- ============================================================
+alter table interview_sessions add column if not exists profile jsonb;
+alter table media_posts add column if not exists address text;
+alter table media_posts add column if not exists phone_number text;
+alter table media_posts add column if not exists tagline text;
+
+-- 補足: 記事本文の写真は Supabase Storage の「article-images」バケット(公開)に保存されます。
+-- バケットはアプリ側から作成済みのため、手動作成は不要です。

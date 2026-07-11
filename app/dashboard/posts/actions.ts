@@ -11,6 +11,9 @@ function parseMediaPostForm(formData: FormData) {
   const trimmerName = String(formData.get("trimmer_name") ?? "").trim();
   const salonName = String(formData.get("salon_name") ?? "").trim();
   const area = String(formData.get("area") ?? "").trim();
+  const address = String(formData.get("address") ?? "").trim();
+  const phoneNumber = String(formData.get("phone_number") ?? "").trim();
+  const tagline = String(formData.get("tagline") ?? "").trim();
   const instagramUrl = String(formData.get("instagram_url") ?? "").trim();
   const websiteUrl = String(formData.get("website_url") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
@@ -31,6 +34,9 @@ function parseMediaPostForm(formData: FormData) {
     trimmer_name: trimmerName,
     salon_name: salonName,
     area,
+    address: address || null,
+    phone_number: phoneNumber || null,
+    tagline: tagline || null,
     instagram_url: instagramUrl || null,
     website_url: websiteUrl || null,
     content,
