@@ -6,7 +6,8 @@ import {
   INTERVIEW_COMPLETE_MARKER,
   PROGRESS_MARKER_REGEX,
 } from "@/lib/claude/prompts";
-import type { InterviewMessage, Project } from "@/lib/types";
+import type { InterviewMessage, InterviewProfile, Project } from "@/lib/types";
+import { getProfileFields } from "@/lib/interview-profile";
 
 // DB上の会話履歴をClaude APIのmessages形式に変換する。
 // 最初のメッセージがassistant(AIからの最初の質問)の場合、Claude APIは
@@ -35,12 +36,13 @@ const EXPECTED_TOTAL_TURNS = 8;
 async function askClaude(
   project: Project,
   history: Pick<InterviewMessage, "role" | "content">[],
-  previousProgress: number
+  previousProgress: number,
+  profile: InterviewProfile | null
 ) {
   const response = await anthropic.messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 1024,
-    system: buildInterviewSystemPrompt(project),
+    system: buildInterviewSystemPrompt(project, profile),
     messages: toClaudeMessages(history),
   });
 
@@ -146,9 +148,19 @@ export async function GET(
 
   let progress = session.progress;
 
-  // 新しいセッションの場合は、AIからの最初の質問を生成して保存する。
-  if (isNew && allMessages.length === 0) {
-    const { content, progress: initialProgress } = await askClaude(project, [], 0);
+  // 事前アンケート未回答かつ会話が始まっていない場合は、まずアンケートに答えてもらう。
+  // (アンケート導入前に始まった既存セッションは、会話が進んでいるのでそのまま続行する)
+  const needsProfile =
+    !session.profile && allMessages.length === 0 && session.status !== "completed";
+
+  // アンケート回答済みでまだ最初の質問がない場合は、AIからの最初の質問を生成して保存する。
+  if (!needsProfile && allMessages.length === 0 && session.status !== "completed") {
+    const { content, progress: initialProgress } = await askClaude(
+      project,
+      [],
+      0,
+      session.profile
+    );
 
     const { data: firstMessage } = await supabase
       .from("interview_messages")
@@ -169,6 +181,82 @@ export async function GET(
   return NextResponse.json({
     sessionStatus: session.status,
     messages: allMessages,
+    progress,
+    needsProfile,
+    articleType: project.article_type,
+  });
+}
+
+// インタビュー前の基本情報アンケートの回答を保存し、AIからの最初の質問を生成する。
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params;
+  const body = await request.json().catch(() => null);
+  const rawProfile = body?.profile;
+
+  if (!rawProfile || typeof rawProfile !== "object") {
+    return NextResponse.json({ error: "アンケートの内容が不正です。" }, { status: 400 });
+  }
+
+  const supabase = createAdminSupabaseClient();
+
+  const project = await getProjectByToken(supabase, token);
+  if (!project) {
+    return NextResponse.json({ error: "リンクが見つかりません。" }, { status: 404 });
+  }
+
+  const { session } = await getOrCreateSession(supabase, project.id);
+
+  if (session.status === "completed") {
+    return NextResponse.json({ error: "このインタビューはすでに終了しています。" }, { status: 400 });
+  }
+
+  // 記事タイプに定義された項目だけを受け取り、値を整形する。
+  const fields = getProfileFields(project.article_type);
+  const profile: InterviewProfile = {};
+  for (const field of fields) {
+    const value = rawProfile[field.key];
+    if (typeof value === "string" && value.trim()) {
+      profile[field.key] = value.trim().slice(0, 500);
+    } else if (field.required) {
+      return NextResponse.json(
+        { error: `「${field.label}」を入力してください。` },
+        { status: 400 }
+      );
+    }
+  }
+
+  const { error: profileError } = await supabase
+    .from("interview_sessions")
+    .update({ profile })
+    .eq("id", session.id);
+
+  if (profileError) {
+    // profile列が未作成(マイグレーション未実行)の場合もここで検知できる。
+    console.error("[PUT profile] 保存失敗:", profileError.message);
+    return NextResponse.json({ error: "アンケートの保存に失敗しました。" }, { status: 500 });
+  }
+
+  // アンケートの内容を踏まえて、AIからの最初の質問を生成する。
+  const { content, progress } = await askClaude(project, [], 0, profile);
+
+  const { data: firstMessage, error: insertError } = await supabase
+    .from("interview_messages")
+    .insert({ session_id: session.id, role: "assistant", content })
+    .select("*")
+    .single();
+
+  if (insertError || !firstMessage) {
+    return NextResponse.json({ error: "質問の生成に失敗しました。" }, { status: 500 });
+  }
+
+  await supabase.from("interview_sessions").update({ progress }).eq("id", session.id);
+
+  return NextResponse.json({
+    sessionStatus: "in_progress",
+    messages: [firstMessage],
     progress,
   });
 }
@@ -214,7 +302,7 @@ export async function POST(
     .eq("session_id", session.id)
     .order("created_at", { ascending: true });
 
-  const { content, completed, progress } = await askClaude(project, history ?? [], session.progress);
+  const { content, completed, progress } = await askClaude(project, history ?? [], session.progress, session.profile);
 
   const { data: savedAssistantMessage, error: assistantInsertError } = await supabase
     .from("interview_messages")
@@ -309,7 +397,7 @@ export async function PATCH(
     .eq("session_id", session.id)
     .order("created_at", { ascending: true });
 
-  const { content, completed, progress } = await askClaude(project, history ?? [], session.progress);
+  const { content, completed, progress } = await askClaude(project, history ?? [], session.progress, session.profile);
 
   const { data: newAssistantMessage, error: assistantInsertError } = await supabase
     .from("interview_messages")

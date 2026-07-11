@@ -54,7 +54,7 @@ export async function POST(
     return NextResponse.json({ error: "回答データがまだありません。" }, { status: 400 });
   }
 
-  const prompt = buildArticleGenerationPrompt(project, messages);
+  const prompt = buildArticleGenerationPrompt(project, messages, session.profile);
   const maxTokens = Math.min(8192, Math.max(2048, project.word_count * 2));
 
   const response = await anthropic.messages.create({

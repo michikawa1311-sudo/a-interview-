@@ -19,11 +19,16 @@ export type Project = {
 
 export type InterviewSessionStatus = "in_progress" | "completed";
 
+// インタビュー前の基本情報アンケートの回答。
+// 項目は記事タイプごとに lib/interview-profile.ts で定義する。
+export type InterviewProfile = Record<string, string>;
+
 export type InterviewSession = {
   id: string;
   project_id: string;
   status: InterviewSessionStatus;
   progress: number;
+  profile: InterviewProfile | null;
   created_at: string;
 };
 
@@ -57,6 +62,9 @@ export type MediaPost = {
   trimmer_name: string;
   salon_name: string;
   area: string;
+  address: string | null;
+  phone_number: string | null;
+  tagline: string | null;
   instagram_url: string | null;
   website_url: string | null;
   content: string;
