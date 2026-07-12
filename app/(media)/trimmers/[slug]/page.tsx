@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import type { MediaPost } from "@/lib/types";
+import LikeButton from "./LikeButton";
+import ShareButtons from "./ShareButtons";
 
 async function getPost(slug: string) {
   const supabase = await createServerSupabaseClient();
@@ -36,13 +39,65 @@ export async function generateMetadata({
   const post = await getPost(slug);
 
   if (!post) {
-    return { title: "記事が見つかりません | うちのトリマーさん" };
+    return { title: `記事が見つかりません | ${SITE_NAME}` };
   }
 
+  const title = `${post.title} | ${SITE_NAME}`;
+  const description = buildDescription(post.content);
+
   return {
-    title: `${post.title} | うちのトリマーさん`,
-    description: buildDescription(post.content),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      siteName: SITE_NAME,
+      url: `${SITE_URL}/trimmers/${post.slug}`,
+      locale: "ja_JP",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
+}
+
+// 検索エンジン向けの構造化データ(記事+店舗情報)。
+function StructuredData({ post }: { post: MediaPost }) {
+  const article = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    datePublished: post.published_at,
+    author: { "@type": "Organization", name: SITE_NAME },
+    publisher: { "@type": "Organization", name: SITE_NAME },
+    mainEntityOfPage: `${SITE_URL}/trimmers/${post.slug}`,
+  };
+
+  const business = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: post.salon_name,
+    ...(post.address && { address: post.address }),
+    ...(post.phone_number && { telephone: post.phone_number }),
+    ...(post.website_url && { url: post.website_url }),
+    ...(post.price_range && { priceRange: post.price_range }),
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(article) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(business) }}
+      />
+    </>
+  );
 }
 
 // 電話・公式サイトの予約ボタン。どちらも未設定の場合は何も表示しない。
@@ -93,6 +148,12 @@ function ProfileCard({ post }: { post: MediaPost }) {
             <dd>{post.address}</dd>
           </div>
         )}
+        {post.price_range && (
+          <div className="flex gap-2">
+            <dt className="shrink-0 text-gray-400">料金目安</dt>
+            <dd>{post.price_range}</dd>
+          </div>
+        )}
         {post.instagram_url && (
           <div className="flex gap-2">
             <dt className="shrink-0 text-gray-400">SNS</dt>
@@ -109,6 +170,17 @@ function ProfileCard({ post }: { post: MediaPost }) {
           </div>
         )}
       </dl>
+      {post.address && (
+        <div className="mt-4 overflow-hidden rounded-xl border border-amber-100">
+          <iframe
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(post.address)}&output=embed`}
+            title={`${post.salon_name}の地図`}
+            className="h-56 w-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -127,6 +199,8 @@ export default async function TrimmerArticlePage({
 
   return (
     <article className="space-y-8">
+      <StructuredData post={post} />
+
       <ProfileCard post={post} />
 
       <ReservationButtons post={post} />
@@ -145,6 +219,11 @@ export default async function TrimmerArticlePage({
         "
       >
         <ReactMarkdown>{post.content}</ReactMarkdown>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <LikeButton postId={post.id} initialLikes={post.likes ?? 0} />
+        <ShareButtons title={post.title} />
       </div>
 
       <div className="space-y-3 rounded-2xl bg-amber-100/50 p-6 text-center">

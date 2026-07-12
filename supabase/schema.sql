@@ -160,6 +160,8 @@ create table if not exists media_posts (
   address text,
   phone_number text,
   tagline text,
+  price_range text,
+  likes int not null default 0,
   instagram_url text,
   website_url text,
   content text not null,
@@ -199,3 +201,11 @@ alter table media_posts add column if not exists tagline text;
 
 -- 補足: 記事本文の写真は Supabase Storage の「article-images」バケット(公開)に保存されます。
 -- バケットはアプリ側から作成済みのため、手動作成は不要です。
+
+-- ============================================================
+-- 追記マイグレーション: 料金目安といいね数の列を追加
+--
+-- すでにテーブルを作成済みの環境では、下の2文だけをSQL Editorで実行してください。
+-- ============================================================
+alter table media_posts add column if not exists price_range text;
+alter table media_posts add column if not exists likes int not null default 0;

@@ -1,12 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import type { MediaPost } from "@/lib/types";
 
+const TOP_TITLE = `${SITE_NAME} | 人柄で選ぶ、東京のトリマー紹介メディア`;
+
 export const metadata: Metadata = {
-  title: "うちのトリマーさん | 人柄で選ぶ、東京のトリマー紹介メディア",
-  description:
-    "世田谷区・杉並区のトリマーさんを、料金や場所ではなく「人柄とこだわり」で紹介するメディアです。大切なうちの子を任せられるトリマーさんに出会えます。",
+  title: TOP_TITLE,
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: TOP_TITLE,
+    description: SITE_DESCRIPTION,
+    type: "website",
+    siteName: SITE_NAME,
+    url: SITE_URL,
+    locale: "ja_JP",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TOP_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 function PostCard({ post }: { post: MediaPost }) {

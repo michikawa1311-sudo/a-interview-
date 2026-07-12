@@ -69,6 +69,7 @@ export default async function PublishMediaPostPage({
             address: profile.address ?? "",
             phone_number: profile.phone_number ?? "",
             tagline: profile.comment ?? "",
+            price_range: profile.price_range ?? "",
             website_url: profile.website_url ?? "",
             instagram_url: profile.sns_url ?? "",
             content: article.content,

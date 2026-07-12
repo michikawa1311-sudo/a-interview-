@@ -65,6 +65,8 @@ export type MediaPost = {
   address: string | null;
   phone_number: string | null;
   tagline: string | null;
+  price_range: string | null;
+  likes: number;
   instagram_url: string | null;
   website_url: string | null;
   content: string;

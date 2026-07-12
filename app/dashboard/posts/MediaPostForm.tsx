@@ -16,6 +16,7 @@ type Defaults = {
   address?: string | null;
   phone_number?: string | null;
   tagline?: string | null;
+  price_range?: string | null;
   instagram_url?: string | null;
   website_url?: string | null;
   content?: string;
@@ -167,6 +168,19 @@ export default function MediaPostForm({
             name="phone_number"
             defaultValue={defaults.phone_number ?? ""}
             placeholder="例: 03-1234-5678"
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="price_range" className="mb-1 block text-sm font-medium text-gray-700">
+            料金の目安(任意・プロフィールに表示)
+          </label>
+          <input
+            id="price_range"
+            name="price_range"
+            defaultValue={defaults.price_range ?? ""}
+            placeholder="例: 小型犬カット 6,000円〜"
             className={inputClass}
           />
         </div>

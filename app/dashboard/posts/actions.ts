@@ -14,6 +14,7 @@ function parseMediaPostForm(formData: FormData) {
   const address = String(formData.get("address") ?? "").trim();
   const phoneNumber = String(formData.get("phone_number") ?? "").trim();
   const tagline = String(formData.get("tagline") ?? "").trim();
+  const priceRange = String(formData.get("price_range") ?? "").trim();
   const instagramUrl = String(formData.get("instagram_url") ?? "").trim();
   const websiteUrl = String(formData.get("website_url") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
@@ -37,6 +38,7 @@ function parseMediaPostForm(formData: FormData) {
     address: address || null,
     phone_number: phoneNumber || null,
     tagline: tagline || null,
+    price_range: priceRange || null,
     instagram_url: instagramUrl || null,
     website_url: websiteUrl || null,
     content,
