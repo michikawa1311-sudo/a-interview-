@@ -158,6 +158,7 @@ create table if not exists media_posts (
   salon_name text not null,
   area text not null,
   address text,
+  nearest_station text,
   phone_number text,
   tagline text,
   price_range text,
@@ -209,3 +210,10 @@ alter table media_posts add column if not exists tagline text;
 -- ============================================================
 alter table media_posts add column if not exists price_range text;
 alter table media_posts add column if not exists likes int not null default 0;
+
+-- ============================================================
+-- 追記マイグレーション: 最寄り駅の列を追加
+--
+-- すでにテーブルを作成済みの環境では、下の1文だけをSQL Editorで実行してください。
+-- ============================================================
+alter table media_posts add column if not exists nearest_station text;
