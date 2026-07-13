@@ -8,6 +8,33 @@ type LoadState = "loading" | "ready" | "not_found" | "error";
 
 const OPTIMISTIC_ID_PREFIX = "optimistic-";
 
+// ブラウザ内蔵の音声認識(Web Speech API)の最小限の型定義。
+// TypeScriptの標準型に含まれていないため自前で定義する。
+type SpeechRecognitionResultEvent = {
+  resultIndex: number;
+  results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
+};
+
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start(): void;
+  stop(): void;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+};
+
+// 対応ブラウザ(Chrome / Safari / Edge等)なら音声認識のコンストラクタを返す。
+function getSpeechRecognitionConstructor(): (new () => SpeechRecognitionLike) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as Record<string, unknown>;
+  return (w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null) as
+    | (new () => SpeechRecognitionLike)
+    | null;
+}
+
 export default function InterviewChat({ token }: { token: string }) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
@@ -24,8 +51,74 @@ export default function InterviewChat({ token }: { token: string }) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  // 音声認識に対応したブラウザでのみマイクボタンを表示する。
+  // (サーバー側描画とのずれを防ぐため、描画後の次フレームで反映する)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setSpeechSupported(getSpeechRecognitionConstructor() !== null);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
+  // マイクボタンで音声入力を開始/停止する。話した内容は入力欄に追記され、
+  // 送信前に自由に修正できる(送信はこれまで通り送信ボタン/Enter)。
+  function toggleRecording() {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
+    if (!SpeechRecognitionCtor) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "ja-JP";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          transcript += result[0].transcript;
+        }
+      }
+      if (transcript) {
+        setInput((prev) => prev + transcript);
+        requestAnimationFrame(resizeTextarea);
+      }
+    };
+
+    recognition.onend = () => {
+      // 無音が続くとブラウザ側で自動終了するため、状態を合わせる。
+      setIsRecording(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        setError("マイクの使用が許可されていません。ブラウザの設定でマイクを許可してください。");
+      }
+      setIsRecording(false);
+      recognitionRef.current = null;
+    };
+
+    setError(null);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  }
 
   useEffect(() => {
     async function load() {
@@ -447,28 +540,52 @@ export default function InterviewChat({ token }: { token: string }) {
       )}
 
       {!completed && !needsProfile && (
-        <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-gray-200 p-4">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              resizeTextarea();
-            }}
-            onKeyDown={handleInputKeyDown}
-            disabled={isSending}
-            rows={1}
-            placeholder="メッセージを入力...(Shift+EnterまたはCtrl+Enterで改行)"
-            className="max-h-40 flex-1 resize-none overflow-y-auto rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={isSending || !input.trim()}
-            className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-          >
-            送信
-          </button>
-        </form>
+        <div className="border-t border-gray-200 p-4">
+          {isRecording && (
+            <p className="mb-2 flex items-center gap-2 text-xs text-rose-500">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-rose-500" />
+              音声を聞き取っています... 話し終わったらマイクボタンで停止してください
+            </p>
+          )}
+          <form onSubmit={handleSubmit} className="flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                resizeTextarea();
+              }}
+              onKeyDown={handleInputKeyDown}
+              disabled={isSending}
+              rows={1}
+              placeholder="メッセージを入力...(Shift+EnterまたはCtrl+Enterで改行)"
+              className="max-h-40 flex-1 resize-none overflow-y-auto rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
+            />
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={toggleRecording}
+                disabled={isSending}
+                aria-label={isRecording ? "音声入力を停止" : "音声で入力"}
+                title={isRecording ? "音声入力を停止" : "音声で入力"}
+                className={`rounded-full border px-3 py-2 text-sm transition disabled:opacity-50 ${
+                  isRecording
+                    ? "animate-pulse border-rose-300 bg-rose-50 text-rose-600"
+                    : "border-gray-300 bg-white text-gray-500 hover:border-indigo-300 hover:text-indigo-600"
+                }`}
+              >
+                🎤
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={isSending || !input.trim()}
+              className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+            >
+              送信
+            </button>
+          </form>
+        </div>
       )}
       {error && <p className="px-4 pb-4 text-sm text-red-600">{error}</p>}
     </div>
