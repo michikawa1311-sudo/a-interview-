@@ -13,13 +13,15 @@ function parseMediaPostForm(formData: FormData) {
   const area = String(formData.get("area") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const nearestStation = String(formData.get("nearest_station") ?? "").trim();
+  const photoUrl = String(formData.get("photo_url") ?? "").trim();
   const phoneNumber = String(formData.get("phone_number") ?? "").trim();
   const tagline = String(formData.get("tagline") ?? "").trim();
   const priceRange = String(formData.get("price_range") ?? "").trim();
   const instagramUrl = String(formData.get("instagram_url") ?? "").trim();
   const websiteUrl = String(formData.get("website_url") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
-  const status = formData.get("status") === "draft" ? "draft" : "published";
+  // 明示的に「公開」を選んだ場合のみ公開。それ以外は非公開(下書き)として保存する。
+  const status = formData.get("status") === "published" ? "published" : "draft";
 
   if (!slug || !title || !trimmerName || !salonName || !area || !content) {
     throw new Error("必須項目が入力されていません。");
@@ -38,6 +40,7 @@ function parseMediaPostForm(formData: FormData) {
     area,
     address: address || null,
     nearest_station: nearestStation || null,
+    photo_url: photoUrl || null,
     phone_number: phoneNumber || null,
     tagline: tagline || null,
     price_range: priceRange || null,
@@ -101,6 +104,44 @@ export async function updateMediaPost(postId: string, formData: FormData) {
   revalidatePath("/");
   revalidatePath(`/trimmers/${fields.slug}`);
   redirect("/dashboard/posts");
+}
+
+// 公開記事一覧からワンクリックで公開/非公開を切り替える。
+export async function toggleMediaPostStatus(postId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: post } = await supabase
+    .from("media_posts")
+    .select("status, slug")
+    .eq("id", postId)
+    .single();
+
+  if (!post) {
+    throw new Error("記事が見つかりません。");
+  }
+
+  const newStatus = post.status === "published" ? "draft" : "published";
+
+  const { error } = await supabase
+    .from("media_posts")
+    .update({ status: newStatus, ...(newStatus === "published" && { published_at: new Date().toISOString() }) })
+    .eq("id", postId);
+
+  if (error) {
+    throw new Error(`公開状態の変更に失敗しました: ${error.message}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/trimmers/${post.slug}`);
+  revalidatePath("/dashboard/posts");
 }
 
 export async function deleteMediaPost(postId: string) {

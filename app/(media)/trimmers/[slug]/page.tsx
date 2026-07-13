@@ -204,10 +204,22 @@ function ReservationButtons({ post }: { post: MediaPost }) {
 function ProfileCard({ post }: { post: MediaPost }) {
   return (
     <div className="rounded-2xl border border-amber-100 bg-white p-6">
-      <p className="mb-1 text-xs font-medium text-amber-700">{post.area}</p>
-      <h2 className="text-lg font-bold text-gray-900">
-        {post.salon_name} / {post.trimmer_name}さん
-      </h2>
+      <div className="flex items-center gap-4">
+        {post.photo_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.photo_url}
+            alt={`${post.trimmer_name}さんの顔写真`}
+            className="h-20 w-20 shrink-0 rounded-full border border-amber-100 object-cover"
+          />
+        )}
+        <div>
+          <p className="mb-1 text-xs font-medium text-amber-700">{post.area}</p>
+          <h2 className="text-lg font-bold text-gray-900">
+            {post.salon_name} / {post.trimmer_name}さん
+          </h2>
+        </div>
+      </div>
       {post.tagline && (
         <p className="mt-2 border-l-4 border-amber-300 pl-3 text-sm leading-relaxed text-gray-600">
           {post.tagline}

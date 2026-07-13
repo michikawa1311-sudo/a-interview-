@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { joinStations } from "@/lib/interview-profile";
 import type { InterviewProfile } from "@/lib/types";
 import MediaPostForm from "../../posts/MediaPostForm";
 import { publishMediaPost } from "../../posts/actions";
@@ -51,9 +52,11 @@ export default async function PublishMediaPostPage({
 
   return (
     <div>
-      <h1 className="mb-2 text-xl font-bold text-gray-900">記事をメディアに公開</h1>
+      <h1 className="mb-2 text-xl font-bold text-gray-900">記事をメディアに登録</h1>
       <p className="mb-6 text-sm text-gray-500">
-        公開すると「うちのトリマーさん」のサイトに掲載されます。回答者が事前アンケートで入力した基本情報は自動で反映済みです。本文は公開前に自由に修正できます(公開後も編集可能です)。
+        まずは<strong>非公開(下書き)</strong>として保存され、サイトにはまだ表示されません。
+        トリマーさんへの内容確認・写真のご依頼が済んだら、「公開記事」一覧から公開してください。
+        回答者が事前アンケートで入力した基本情報は自動で反映済みです。
       </p>
 
       <div className="rounded-lg border border-gray-200 bg-white p-6">
@@ -67,15 +70,18 @@ export default async function PublishMediaPostPage({
             salon_name:
               profile.salon_name ?? (project.article_type === "店舗紹介" ? project.theme : ""),
             address: profile.address ?? "",
-            nearest_station: profile.nearest_station ?? "",
+            nearest_station: joinStations(profile),
+            photo_url: profile.photo_url ?? "",
             phone_number: profile.phone_number ?? "",
             tagline: profile.comment ?? "",
             price_range: profile.price_range ?? "",
             website_url: profile.website_url ?? "",
             instagram_url: profile.sns_url ?? "",
             content: article.content,
+            status: "draft",
           }}
-          submitLabel="公開する"
+          submitLabel="非公開(下書き)として保存"
+          showStatus
         />
       </div>
     </div>
