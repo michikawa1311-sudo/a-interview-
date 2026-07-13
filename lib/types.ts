@@ -64,6 +64,7 @@ export type MediaPost = {
   area: string;
   address: string | null;
   nearest_station: string | null;
+  photo_url: string | null;
   phone_number: string | null;
   tagline: string | null;
   price_range: string | null;

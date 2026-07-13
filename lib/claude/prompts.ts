@@ -44,10 +44,11 @@ const DEFAULT_ARTICLE_ELEMENT_CHECKLIST = [
 ];
 
 // 事前アンケートの回答を、システムプロンプトに載せる箇条書きテキストに変換する。
+// 写真(URL)はAIへの情報として意味がないため除外する。
 function formatProfile(project: Project, profile: InterviewProfile): string {
   const fields = getProfileFields(project.article_type);
   return fields
-    .filter((field) => profile[field.key]?.trim())
+    .filter((field) => field.type !== "photo" && profile[field.key]?.trim())
     .map((field) => `- ${field.label}: ${profile[field.key].trim()}`)
     .join("\n");
 }

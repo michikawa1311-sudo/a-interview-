@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import ToggleStatusButton from "./ToggleStatusButton";
+import { toggleMediaPostStatus } from "./actions";
 
 export default async function MediaPostsPage() {
   const supabase = await createServerSupabaseClient();
@@ -56,6 +58,10 @@ export default async function MediaPostsPage() {
                 >
                   編集
                 </Link>
+                <ToggleStatusButton
+                  isPublished={post.status === "published"}
+                  toggleAction={toggleMediaPostStatus.bind(null, post.id)}
+                />
               </div>
             </li>
           ))}

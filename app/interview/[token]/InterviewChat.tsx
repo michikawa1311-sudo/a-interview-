@@ -17,6 +17,7 @@ export default function InterviewChat({ token }: { token: string }) {
   const [articleType, setArticleType] = useState("");
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +54,38 @@ export default function InterviewChat({ token }: { token: string }) {
 
     load().catch(() => setLoadState("error"));
   }, [token]);
+
+  // アンケートの顔写真をアップロードし、URLを回答値として保存する。
+  async function handleProfilePhotoSelected(
+    fieldKey: string,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`/api/interview/${token}/photo`, {
+      method: "POST",
+      body: formData,
+    });
+
+    setIsUploadingPhoto(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "写真のアップロードに失敗しました。");
+      return;
+    }
+
+    const data = await res.json();
+    setProfileValues((prev) => ({ ...prev, [fieldKey]: data.url }));
+  }
 
   async function submitProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -264,16 +297,48 @@ export default function InterviewChat({ token }: { token: string }) {
                     {field.label}
                     {field.required && " *"}
                   </label>
-                  <input
-                    id={`profile-${field.key}`}
-                    required={field.required}
-                    value={profileValues[field.key] ?? ""}
-                    onChange={(e) =>
-                      setProfileValues((prev) => ({ ...prev, [field.key]: e.target.value }))
-                    }
-                    placeholder={field.placeholder}
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
-                  />
+                  {field.type === "photo" ? (
+                    <div className="flex items-center gap-4">
+                      {profileValues[field.key] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={profileValues[field.key]}
+                          alt="顔写真プレビュー"
+                          className="h-20 w-20 rounded-full border border-gray-200 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-gray-300 text-xs text-gray-400">
+                          未設定
+                        </div>
+                      )}
+                      <div>
+                        <input
+                          id={`profile-${field.key}`}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => handleProfilePhotoSelected(field.key, e)}
+                          disabled={isUploadingPhoto}
+                          className="text-sm text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                        />
+                        <p className="mt-1 text-xs text-gray-400">
+                          {isUploadingPhoto
+                            ? "アップロード中..."
+                            : "円形に切り取って掲載されます(JPEG/PNG、5MBまで)"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      id={`profile-${field.key}`}
+                      required={field.required}
+                      value={profileValues[field.key] ?? ""}
+                      onChange={(e) =>
+                        setProfileValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                      }
+                      placeholder={field.placeholder}
+                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none"
+                    />
+                  )}
                 </div>
               ))}
 
@@ -365,8 +430,14 @@ export default function InterviewChat({ token }: { token: string }) {
             <div className="rounded-md bg-white/60 px-3 py-2 text-green-700">
               <p className="mb-1 font-semibold">今後の流れ</p>
               <p>
-                いただいた回答をもとに記事を作成し、内容を整えたうえで公開されます。
-                掲載内容のご確認や修正のご希望がありましたら、このリンクをお送りした担当者までお気軽にご連絡ください。
+                1. いただいた回答をもとに記事を作成します
+                <br />
+                2. 公開前に、担当者から記事の内容のご確認と、掲載に必要な写真のご依頼をさせていただきます
+                <br />
+                3. ご確認が済みましたら記事を公開します
+              </p>
+              <p className="mt-1">
+                ご不明な点は、このリンクをお送りした担当者までお気軽にご連絡ください。
               </p>
             </div>
           </div>

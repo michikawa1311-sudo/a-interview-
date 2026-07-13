@@ -15,6 +15,7 @@ type Defaults = {
   area?: string;
   address?: string | null;
   nearest_station?: string | null;
+  photo_url?: string | null;
   phone_number?: string | null;
   tagline?: string | null;
   price_range?: string | null;
@@ -41,6 +42,34 @@ export default function MediaPostForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState(defaults.photo_url ?? "");
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // プロフィール用の顔写真をアップロードする。
+  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    setUploadError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/upload-image", { method: "POST", body: formData });
+
+    setIsUploadingPhoto(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setUploadError(data?.error ?? "写真のアップロードに失敗しました。");
+      return;
+    }
+
+    const data = await res.json();
+    setPhotoUrl(data.url);
+  }
 
   // 画像をアップロードし、本文テキストエリアのカーソル位置にMarkdownの画像記法を挿入する。
   async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -80,6 +109,46 @@ export default function MediaPostForm({
   return (
     <form action={action} className="space-y-4">
       {projectId && <input type="hidden" name="project_id" value={projectId} />}
+      <input type="hidden" name="photo_url" value={photoUrl} />
+
+      <div>
+        <span className="mb-1 block text-sm font-medium text-gray-700">
+          顔写真(任意・プロフィールに円形で表示)
+        </span>
+        <div className="flex items-center gap-4">
+          {photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photoUrl}
+              alt="顔写真プレビュー"
+              className="h-20 w-20 rounded-full border border-gray-200 object-cover"
+            />
+          ) : (
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-gray-300 text-xs text-gray-400">
+              未設定
+            </div>
+          )}
+          <div>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoSelected}
+              disabled={isUploadingPhoto}
+              className="text-sm text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+            />
+            {isUploadingPhoto && <p className="mt-1 text-xs text-gray-400">アップロード中...</p>}
+            {photoUrl && (
+              <button
+                type="button"
+                onClick={() => setPhotoUrl("")}
+                className="mt-1 text-xs text-gray-400 underline hover:text-gray-600"
+              >
+                写真を削除
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
