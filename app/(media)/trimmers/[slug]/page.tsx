@@ -19,6 +19,78 @@ async function getPost(slug: string) {
   return post;
 }
 
+// 記事本文の見出し(H2/H3)を抜き出して目次を作る。
+type Heading = { level: 2 | 3; text: string };
+
+// 見出しテキストから太字・リンクなどの装飾記法を取り除く。
+// (本文レンダリング時の見出しIDと一致させるため、表示テキストと同じ形にする)
+function stripInlineMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`]/g, "")
+    .trim();
+}
+
+function extractHeadings(content: string): Heading[] {
+  const headings: Heading[] = [];
+  // 記事本文はWindows形式の改行(\r\n)で保存されていることがあるため、\rも含めて区切る。
+  for (const line of content.split(/\r?\n/)) {
+    const h3 = line.match(/^###\s+(.+)$/);
+    const h2 = line.match(/^##\s+(.+)$/);
+    if (h3) headings.push({ level: 3, text: stripInlineMarkdown(h3[1]) });
+    else if (h2) headings.push({ level: 2, text: stripInlineMarkdown(h2[1]) });
+  }
+  return headings;
+}
+
+// React要素の中身をプレーンテキストに変換する(見出しID生成用)。
+function childrenToText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(childrenToText).join("");
+  if (node && typeof node === "object" && "props" in node) {
+    return childrenToText((node as { props: { children?: React.ReactNode } }).props.children);
+  }
+  return "";
+}
+
+// 見出しにジャンプ用のIDを付けるためのカスタムレンダラー。
+const markdownComponents = {
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h2 id={childrenToText(children).trim()} className="scroll-mt-4">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h3 id={childrenToText(children).trim()} className="scroll-mt-4">
+      {children}
+    </h3>
+  ),
+};
+
+// 目次。見出しが2つ以上あるときだけ表示する。
+function TableOfContents({ headings }: { headings: Heading[] }) {
+  if (headings.length < 2) return null;
+
+  return (
+    <nav className="rounded-2xl border border-amber-100 bg-white p-5">
+      <p className="mb-3 text-sm font-bold text-gray-900">目次</p>
+      <ul className="space-y-2 text-sm">
+        {headings.map((heading, index) => (
+          <li key={`${heading.text}-${index}`} className={heading.level === 3 ? "pl-4" : ""}>
+            <a
+              href={`#${encodeURIComponent(heading.text)}`}
+              className="text-amber-700 hover:text-amber-900 hover:underline"
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 // Markdown記法を取り除いた冒頭部分を、検索結果に表示される説明文として使う。
 function buildDescription(content: string): string {
   return content
@@ -148,6 +220,12 @@ function ProfileCard({ post }: { post: MediaPost }) {
             <dd>{post.address}</dd>
           </div>
         )}
+        {post.nearest_station && (
+          <div className="flex gap-2">
+            <dt className="shrink-0 text-gray-400">最寄り駅</dt>
+            <dd>{post.nearest_station}</dd>
+          </div>
+        )}
         {post.price_range && (
           <div className="flex gap-2">
             <dt className="shrink-0 text-gray-400">料金目安</dt>
@@ -205,6 +283,8 @@ export default async function TrimmerArticlePage({
 
       <ReservationButtons post={post} />
 
+      <TableOfContents headings={extractHeadings(post.content)} />
+
       <div
         className="
           text-[15px] leading-relaxed text-gray-800
@@ -218,7 +298,7 @@ export default async function TrimmerArticlePage({
           [&_img]:mx-auto [&_img]:my-6 [&_img]:max-w-full [&_img]:rounded-2xl
         "
       >
-        <ReactMarkdown>{post.content}</ReactMarkdown>
+        <ReactMarkdown components={markdownComponents}>{post.content}</ReactMarkdown>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">

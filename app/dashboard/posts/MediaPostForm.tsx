@@ -14,6 +14,7 @@ type Defaults = {
   salon_name?: string;
   area?: string;
   address?: string | null;
+  nearest_station?: string | null;
   phone_number?: string | null;
   tagline?: string | null;
   price_range?: string | null;
@@ -155,6 +156,19 @@ export default function MediaPostForm({
             name="address"
             defaultValue={defaults.address ?? ""}
             placeholder="例: 東京都世田谷区○○ 1-2-3"
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="nearest_station" className="mb-1 block text-sm font-medium text-gray-700">
+            最寄り駅(任意)
+          </label>
+          <input
+            id="nearest_station"
+            name="nearest_station"
+            defaultValue={defaults.nearest_station ?? ""}
+            placeholder="例: 京王線 下高井戸駅 徒歩5分"
             className={inputClass}
           />
         </div>

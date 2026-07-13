@@ -12,6 +12,7 @@ const STORE_PROFILE_FIELDS: ProfileField[] = [
   { key: "name", label: "お名前", placeholder: "例: 田中 花子", required: true },
   { key: "salon_name", label: "店舗名", placeholder: "例: DogSalon はなまる", required: true },
   { key: "address", label: "住所", placeholder: "例: 東京都世田谷区○○ 1-2-3", required: false },
+  { key: "nearest_station", label: "最寄り駅", placeholder: "例: 京王線 下高井戸駅 徒歩5分", required: false },
   { key: "phone_number", label: "電話番号", placeholder: "例: 03-1234-5678", required: false },
   { key: "reservation_method", label: "予約方法", placeholder: "例: 電話 / 公式サイト / InstagramのDM", required: false },
   { key: "website_url", label: "公式サイト・予約ページのURL", placeholder: "https://...", required: false },

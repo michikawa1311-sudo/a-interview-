@@ -67,6 +67,7 @@ export default async function PublishMediaPostPage({
             salon_name:
               profile.salon_name ?? (project.article_type === "店舗紹介" ? project.theme : ""),
             address: profile.address ?? "",
+            nearest_station: profile.nearest_station ?? "",
             phone_number: profile.phone_number ?? "",
             tagline: profile.comment ?? "",
             price_range: profile.price_range ?? "",

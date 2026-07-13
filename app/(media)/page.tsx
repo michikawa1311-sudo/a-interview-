@@ -35,6 +35,9 @@ function PostCard({ post }: { post: MediaPost }) {
       </p>
       <h3 className="mb-2 font-bold text-gray-900">{post.title}</h3>
       <p className="text-sm text-gray-500">{post.trimmer_name}さん</p>
+      {post.nearest_station && (
+        <p className="mt-1 text-xs text-gray-400">最寄り駅: {post.nearest_station}</p>
+      )}
     </Link>
   );
 }

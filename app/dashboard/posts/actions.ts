@@ -12,6 +12,7 @@ function parseMediaPostForm(formData: FormData) {
   const salonName = String(formData.get("salon_name") ?? "").trim();
   const area = String(formData.get("area") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
+  const nearestStation = String(formData.get("nearest_station") ?? "").trim();
   const phoneNumber = String(formData.get("phone_number") ?? "").trim();
   const tagline = String(formData.get("tagline") ?? "").trim();
   const priceRange = String(formData.get("price_range") ?? "").trim();
@@ -36,6 +37,7 @@ function parseMediaPostForm(formData: FormData) {
     salon_name: salonName,
     area,
     address: address || null,
+    nearest_station: nearestStation || null,
     phone_number: phoneNumber || null,
     tagline: tagline || null,
     price_range: priceRange || null,
