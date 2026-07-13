@@ -17,6 +17,7 @@ const STORE_PROFILE_FIELDS: ProfileField[] = [
   { key: "website_url", label: "公式サイト・予約ページのURL", placeholder: "https://...", required: false },
   { key: "sns_url", label: "SNS(Instagram等)のURL", placeholder: "https://www.instagram.com/...", required: false },
   { key: "business_hours", label: "営業時間・定休日", placeholder: "例: 10:00〜18:00 / 水曜定休", required: false },
+  { key: "price_range", label: "料金の目安", placeholder: "例: 小型犬カット 6,000円〜", required: false },
   { key: "comment", label: "お客様への一言", placeholder: "例: わんちゃんのペースに合わせた優しいトリミングを心がけています", required: false },
 ];
 
