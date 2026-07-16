@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { SITE_URL } from "@/lib/site";
+import { MEDIA_AREAS, SITE_URL } from "@/lib/site";
 
 // 検索エンジンに公開ページの一覧を伝えるサイトマップ。
 // 訪問者のCookieに依存しないよう、公開済み記事の取得にはadminクライアントを使う。
@@ -19,12 +19,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const areaEntries: MetadataRoute.Sitemap = MEDIA_AREAS.map((area) => ({
+    url: `${SITE_URL}/area/${area.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.9,
+  }));
+
   return [
     {
       url: SITE_URL,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
+    },
+    ...areaEntries,
+    {
+      url: `${SITE_URL}/about`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
     ...articleEntries,
   ];

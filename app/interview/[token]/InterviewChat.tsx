@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { InterviewMessage } from "@/lib/types";
 import { getProfileFields } from "@/lib/interview-profile";
+import PhotoCropModal from "@/components/PhotoCropModal";
 
 type LoadState = "loading" | "ready" | "not_found" | "error";
 
@@ -45,6 +46,7 @@ export default function InterviewChat({ token }: { token: string }) {
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<{ fieldKey: string; file: File } | null>(null);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -148,20 +150,27 @@ export default function InterviewChat({ token }: { token: string }) {
     load().catch(() => setLoadState("error"));
   }, [token]);
 
-  // アンケートの顔写真をアップロードし、URLを回答値として保存する。
-  async function handleProfilePhotoSelected(
+  // 顔写真が選択されたら、まず切り取り位置を選ぶモーダルを開く。
+  function handleProfilePhotoSelected(
     fieldKey: string,
     e: React.ChangeEvent<HTMLInputElement>
   ) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    setPendingPhoto({ fieldKey, file });
+  }
 
+  // 切り取り後の画像をアップロードし、URLを回答値として保存する。
+  async function uploadCroppedPhoto(blob: Blob) {
+    if (!pendingPhoto) return;
+    const { fieldKey } = pendingPhoto;
+    setPendingPhoto(null);
     setIsUploadingPhoto(true);
     setError(null);
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", blob, "photo.jpg");
 
     const res = await fetch(`/api/interview/${token}/photo`, {
       method: "POST",
@@ -358,6 +367,13 @@ export default function InterviewChat({ token }: { token: string }) {
 
   return (
     <div className="mx-auto flex h-screen max-w-2xl flex-col">
+      {pendingPhoto && (
+        <PhotoCropModal
+          file={pendingPhoto.file}
+          onCancel={() => setPendingPhoto(null)}
+          onCropped={uploadCroppedPhoto}
+        />
+      )}
       <header className="border-b border-gray-200 px-4 py-4">
         <h1 className="text-lg font-bold text-gray-900">A.Interview</h1>
         <p className="mb-3 text-sm text-gray-500">AIチャットに答えるだけでインタビューが完了します</p>

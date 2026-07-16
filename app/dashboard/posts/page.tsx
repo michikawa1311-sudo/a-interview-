@@ -43,15 +43,13 @@ export default async function MediaPostsPage() {
                 >
                   {post.status === "published" ? "公開中" : "非公開"}
                 </span>
-                {post.status === "published" && (
-                  <Link
-                    href={`/trimmers/${post.slug}`}
-                    target="_blank"
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    表示
-                  </Link>
-                )}
+                <Link
+                  href={`/trimmers/${post.slug}`}
+                  target="_blank"
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  {post.status === "published" ? "表示" : "プレビュー"}
+                </Link>
                 <Link
                   href={`/dashboard/posts/${post.id}`}
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-500"

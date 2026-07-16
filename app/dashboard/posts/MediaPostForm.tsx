@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import PhotoCropModal from "@/components/PhotoCropModal";
+import { MEDIA_AREAS } from "@/lib/site";
 
-const AREAS = ["世田谷区", "杉並区"];
+const AREAS = MEDIA_AREAS.map((area) => area.name);
 
 const inputClass =
   "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none";
@@ -44,18 +46,24 @@ export default function MediaPostForm({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState(defaults.photo_url ?? "");
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
 
-  // プロフィール用の顔写真をアップロードする。
-  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  // 顔写真が選択されたら、まず切り取り位置を選ぶモーダルを開く。
+  function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    setPendingPhotoFile(file);
+  }
 
+  // 切り取り後の顔写真をアップロードする。
+  async function uploadCroppedPhoto(blob: Blob) {
+    setPendingPhotoFile(null);
     setIsUploadingPhoto(true);
     setUploadError(null);
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", blob, "photo.jpg");
 
     const res = await fetch("/api/upload-image", { method: "POST", body: formData });
 
@@ -108,6 +116,13 @@ export default function MediaPostForm({
 
   return (
     <form action={action} className="space-y-4">
+      {pendingPhotoFile && (
+        <PhotoCropModal
+          file={pendingPhotoFile}
+          onCancel={() => setPendingPhotoFile(null)}
+          onCropped={uploadCroppedPhoto}
+        />
+      )}
       {projectId && <input type="hidden" name="project_id" value={projectId} />}
       <input type="hidden" name="photo_url" value={photoUrl} />
 

@@ -11,3 +11,17 @@ export const SITE_DESCRIPTION =
 
 // いいね数がこの値未満の間は数字を表示しない(少ない数字が並ぶと閑散として見えるため)。
 export const LIKES_DISPLAY_THRESHOLD = 10;
+
+// 掲載対象エリア。slugはエリアページのURL(/area/[slug])に使う。
+export const MEDIA_AREAS = [
+  { name: "世田谷区", slug: "setagaya" },
+  { name: "杉並区", slug: "suginami" },
+] as const;
+
+export function findAreaBySlug(slug: string) {
+  return MEDIA_AREAS.find((area) => area.slug === slug) ?? null;
+}
+
+export function findAreaByName(name: string) {
+  return MEDIA_AREAS.find((area) => area.name === name) ?? null;
+}

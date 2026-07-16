@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
-import type { MediaPost } from "@/lib/types";
+import { MEDIA_AREAS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import PostCard from "./PostCard";
 
 const TOP_TITLE = `${SITE_NAME} | 人柄で選ぶ、東京のトリマー紹介メディア`;
 
 export const metadata: Metadata = {
   title: TOP_TITLE,
   description: SITE_DESCRIPTION,
+  alternates: { canonical: SITE_URL },
   openGraph: {
     title: TOP_TITLE,
     description: SITE_DESCRIPTION,
@@ -24,44 +25,6 @@ export const metadata: Metadata = {
   },
 };
 
-function PostCard({ post }: { post: MediaPost }) {
-  // 複数の最寄り駅は「 / 」区切りで保存されているため、一番近い駅(先頭)だけを表示する。
-  const nearestStation = post.nearest_station?.split("/")[0]?.trim();
-
-  return (
-    <Link
-      href={`/trimmers/${post.slug}`}
-      className="block rounded-xl border border-amber-100 bg-white p-5 transition hover:border-amber-300 hover:shadow-sm"
-    >
-      <div className="flex items-start gap-4">
-        {post.photo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.photo_url}
-            alt={`${post.trimmer_name}さんの顔写真`}
-            className="h-16 w-16 shrink-0 rounded-full border border-amber-100 object-cover"
-          />
-        ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-amber-100 text-2xl">
-            🐶
-          </div>
-        )}
-        <div className="min-w-0">
-          <p className="mb-1 text-xs font-medium text-amber-700">
-            {post.area} / {post.salon_name}
-          </p>
-          <h3 className="mb-2 font-bold text-gray-900">{post.title}</h3>
-          <p className="text-sm text-gray-500">{post.trimmer_name}さん</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
-            {nearestStation && <span>最寄り駅: {nearestStation}</span>}
-            <span className="text-rose-400">♥ {post.likes ?? 0}</span>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 export default async function MediaTopPage() {
   const supabase = await createServerSupabaseClient();
   const { data: posts } = await supabase
@@ -71,10 +34,22 @@ export default async function MediaTopPage() {
     .order("published_at", { ascending: false });
 
   const allPosts = posts ?? [];
-  const areas = ["世田谷区", "杉並区"];
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+  };
 
   return (
     <div className="space-y-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+
       <section className="text-center">
         <h1 className="mb-3 text-2xl font-bold text-gray-900 sm:text-3xl">
           人柄で選ぶ、うちの子のトリマー
@@ -90,14 +65,20 @@ export default async function MediaTopPage() {
           記事を準備中です。もうしばらくお待ちください。
         </p>
       ) : (
-        areas.map((area) => {
-          const areaPosts = allPosts.filter((p) => p.area === area);
+        MEDIA_AREAS.map((area) => {
+          const areaPosts = allPosts.filter((p) => p.area === area.name);
           if (areaPosts.length === 0) return null;
           return (
-            <section key={area}>
-              <h2 className="mb-4 border-b border-amber-200 pb-2 text-lg font-bold text-gray-900">
-                {area}のトリマーさん
-              </h2>
+            <section key={area.name}>
+              <div className="mb-4 flex items-center justify-between border-b border-amber-200 pb-2">
+                <h2 className="text-lg font-bold text-gray-900">{area.name}のトリマーさん</h2>
+                <Link
+                  href={`/area/${area.slug}`}
+                  className="text-sm font-medium text-amber-700 hover:text-amber-900"
+                >
+                  {area.name}の一覧へ →
+                </Link>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {areaPosts.map((post) => (
                   <PostCard key={post.id} post={post} />
