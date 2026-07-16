@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "A.Interview",
   description: "AIチャットで回答するだけでインタビュー記事を自動生成",
+  // Google Search Consoleのサイト所有権確認用。
+  verification: {
+    google: "ysjR4WxvqQ2HBR7tr2A5SzclhUBpZK15I2k7xXSXeN4",
+  },
 };
 
 export default function RootLayout({
