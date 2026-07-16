@@ -13,7 +13,7 @@ export const PROGRESS_MARKER_REGEX = /\[\[PROGRESS:(\d{1,3})\]\]/;
 // 指定のない記事タイプ(例: ブログ)では、この観点リストなしで進める。
 const TYPE_SPECIFIC_FOCUS: Record<string, string> = {
   店舗紹介:
-    "店名の由来・込めた思い、お店のこだわり・おすすめポイント(カット技術・シャンプー・お店の雰囲気など)、得意なカットスタイルや犬種、安全面・健康面への配慮、内装や雰囲気の特徴、他のお店に負けないと思うポイント(競合と比べた強み)、お客様やわんちゃんとの印象的なエピソード",
+    "トリマーを目指したきっかけ、動物たちへの想い、店名の由来・込めた思い、お店のこだわり・おすすめポイント(カット技術・シャンプー・お店の雰囲気など)、サロンの紹介や働き方(どんな体制で営業しているか、大切にしている働き方など)、得意なカットスタイルや犬種、安全面・健康面への配慮、内装や雰囲気の特徴、他のお店に負けないと思うポイント(競合と比べた強み)、お客様やわんちゃんとの印象的なエピソード",
   個人インタビュー: "経歴、転機となった出来事、価値観、仕事や活動へのこだわり",
 };
 
@@ -23,8 +23,10 @@ const TYPE_SPECIFIC_FOCUS: Record<string, string> = {
 const ARTICLE_ELEMENT_CHECKLIST: Record<string, string[]> = {
   店舗紹介: [
     "店舗の基本情報(店名・場所・アクセス)",
+    "トリマーを目指したきっかけや動物たちへの想い",
     "店名の由来やお店に込めた思い",
     "お店のこだわり・おすすめポイント(カット・シャンプー・雰囲気など)",
+    "サロンの紹介や働き方",
     "内装や雰囲気が伝わる描写",
     "読者が来店したくなるまとめ",
   ],
@@ -103,7 +105,8 @@ ${firstQuestionInstruction}
 export function buildArticleGenerationPrompt(
   project: Project,
   transcript: Pick<InterviewMessage, "role" | "content">[],
-  profile: InterviewProfile | null
+  profile: InterviewProfile | null,
+  reviews: string | null
 ): string {
   const conversationText = transcript
     .map((m) => `${m.role === "assistant" ? "インタビュアー" : "回答者"}: ${m.content}`)
@@ -129,7 +132,7 @@ export function buildArticleGenerationPrompt(
 ${profileText ? `\n## 回答者の基本情報(事前アンケートより)\n${profileText}\n(住所・電話番号・URLなどの連絡先情報は記事ページのプロフィール欄に別途表示されるため、本文には自然に触れる程度にし、一覧的に羅列しないでください)\n` : ""}
 ## インタビュー内容
 ${conversationText}
-
+${reviews?.trim() ? `\n## お客様の口コミ(管理者が貼り付けたもの)\n${reviews.trim()}\n(これらの口コミを一字一句そのまま引用するのではなく、内容や評判のポイントを自然な文章に言い換えて記事に反映してください。「〜という声も寄せられています」のように、実際の評判が伝わる形で盛り込んでください)\n` : ""}
 ## 含めるべき要素(チェックリスト)
 以下の要素には、記事のどこかで必ず触れてください。ただし見出しの文言・順番・どのエピソードを主役にするかは自由に決めてよく、テンプレート的に同じ型にはめる必要はありません。読者を惹きつける最も面白い角度から書き始めるなど、記事ごとの個性や面白さを優先してください。
 ${elementChecklistText}

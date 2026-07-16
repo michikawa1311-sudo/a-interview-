@@ -14,6 +14,7 @@ export type Project = {
   word_count: number;
   share_token: string;
   status: ProjectStatus;
+  reviews: string | null;
   created_at: string;
 };
 
@@ -69,6 +70,11 @@ export type MediaPost = {
   tagline: string | null;
   price_range: string | null;
   likes: number;
+  view_count: number;
+  phone_click_count: number;
+  website_click_count: number;
+  lat: number | null;
+  lng: number | null;
   instagram_url: string | null;
   website_url: string | null;
   content: string;

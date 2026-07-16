@@ -18,6 +18,7 @@ create table if not exists projects (
   word_count int not null,
   share_token text not null unique,
   status text not null default 'draft' check (status in ('draft', 'in_progress', 'completed', 'generated')),
+  reviews text,
   created_at timestamptz not null default now()
 );
 
@@ -164,6 +165,11 @@ create table if not exists media_posts (
   tagline text,
   price_range text,
   likes int not null default 0,
+  view_count int not null default 0,
+  phone_click_count int not null default 0,
+  website_click_count int not null default 0,
+  lat double precision,
+  lng double precision,
   instagram_url text,
   website_url text,
   content text not null,
@@ -225,3 +231,28 @@ alter table media_posts add column if not exists nearest_station text;
 -- すでにテーブルを作成済みの環境では、下の1文だけをSQL Editorで実行してください。
 -- ============================================================
 alter table media_posts add column if not exists photo_url text;
+
+-- ============================================================
+-- 追記マイグレーション: 記事生成に反映する口コミの貼り付け欄を追加
+--
+-- すでにテーブルを作成済みの環境では、下の1文だけをSQL Editorで実行してください。
+-- ============================================================
+alter table projects add column if not exists reviews text;
+
+-- ============================================================
+-- 追記マイグレーション: アクセス解析(閲覧数・予約ボタンクリック数)の列を追加
+--
+-- すでにテーブルを作成済みの環境では、下の3文だけをSQL Editorで実行してください。
+-- ============================================================
+alter table media_posts add column if not exists view_count int not null default 0;
+alter table media_posts add column if not exists phone_click_count int not null default 0;
+alter table media_posts add column if not exists website_click_count int not null default 0;
+
+-- ============================================================
+-- 追記マイグレーション: マップ表示用の緯度・経度を追加
+--
+-- すでにテーブルを作成済みの環境では、下の2文だけをSQL Editorで実行してください。
+-- (住所から自動計算されます。手動で入力する必要はありません)
+-- ============================================================
+alter table media_posts add column if not exists lat double precision;
+alter table media_posts add column if not exists lng double precision;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MEDIA_AREAS } from "@/lib/site";
+import { CONTACT_EMAIL, CONTACT_INSTAGRAM_URL, MEDIA_AREAS } from "@/lib/site";
 
 // 公開メディア「うちのトリマーさん」の共通レイアウト(ヘッダー・フッター)。
 // 管理画面(A.Interview)とは別ブランドのため、温かみのあるアンバー系の配色にしている。
@@ -31,10 +31,26 @@ export default function MediaLayout({ children }: { children: React.ReactNode })
                 {area.name}のトリマーさん
               </Link>
             ))}
+            <Link href="/map" className="hover:text-amber-700">
+              地図から探す
+            </Link>
             <Link href="/about" className="hover:text-amber-700">
               このサイトについて
             </Link>
           </nav>
+          <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-amber-700">
+              {CONTACT_EMAIL}
+            </a>
+            <a
+              href={CONTACT_INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-amber-700"
+            >
+              Instagram
+            </a>
+          </p>
           <p>うちのトリマーさん — 東京(世田谷区・杉並区)のトリマーを人柄で紹介するメディア</p>
         </div>
       </footer>

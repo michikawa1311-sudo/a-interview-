@@ -32,6 +32,14 @@ export default async function MediaPostsPage() {
                 <p className="text-sm text-gray-500">
                   {post.area} / {post.salon_name} / {post.trimmer_name}さん
                 </p>
+                {post.status === "published" && (
+                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+                    <span>閲覧 {post.view_count ?? 0}</span>
+                    <span>電話クリック {post.phone_click_count ?? 0}</span>
+                    <span>サイトクリック {post.website_click_count ?? 0}</span>
+                    <span>いいね {post.likes ?? 0}</span>
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <span

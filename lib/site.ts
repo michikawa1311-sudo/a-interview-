@@ -9,6 +9,9 @@ export const SITE_NAME = "うちのトリマーさん";
 export const SITE_DESCRIPTION =
   "世田谷区・杉並区のトリマーさんを、料金や場所ではなく「人柄とこだわり」で紹介するメディアです。大切なうちの子を任せられるトリマーさんに出会えます。";
 
+export const CONTACT_EMAIL = "masa.ichikawa1311@gmail.com";
+export const CONTACT_INSTAGRAM_URL = "https://www.instagram.com/uchi_no_trimmer_san/";
+
 // いいね数がこの値未満の間は数字を表示しない(少ない数字が並ぶと閑散として見えるため)。
 export const LIKES_DISPLAY_THRESHOLD = 10;
 

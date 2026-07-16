@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { geocodeAddress } from "@/lib/geocode";
 
 // フォームの共通項目を取り出して検証する。
 function parseMediaPostForm(formData: FormData) {
@@ -51,6 +52,26 @@ function parseMediaPostForm(formData: FormData) {
   } as const;
 }
 
+// マップページ表示用に、住所(なければ最寄り駅・エリア)から緯度経度を求める。
+// ジオコーディングに失敗しても記事の保存自体は止めない(マップに表示されないだけになる)。
+async function resolveCoordinates(fields: {
+  address: string | null;
+  nearest_station: string | null;
+  area: string;
+}): Promise<{ lat: number | null; lng: number | null }> {
+  const query =
+    fields.address ??
+    (fields.nearest_station ? `東京都 ${fields.area} ${fields.nearest_station.split(" ")[0]}` : `東京都 ${fields.area}`);
+
+  try {
+    const result = await geocodeAddress(query);
+    return result ? { lat: result.lat, lng: result.lng } : { lat: null, lng: null };
+  } catch (error) {
+    console.error("[resolveCoordinates] ジオコーディング失敗:", error);
+    return { lat: null, lng: null };
+  }
+}
+
 export async function publishMediaPost(formData: FormData) {
   const supabase = await createServerSupabaseClient();
 
@@ -64,11 +85,13 @@ export async function publishMediaPost(formData: FormData) {
 
   const fields = parseMediaPostForm(formData);
   const projectId = String(formData.get("project_id") ?? "").trim() || null;
+  const coordinates = await resolveCoordinates(fields);
 
   const { error } = await supabase.from("media_posts").insert({
     owner_id: user.id,
     project_id: projectId,
     ...fields,
+    ...coordinates,
   });
 
   if (error) {
@@ -94,8 +117,12 @@ export async function updateMediaPost(postId: string, formData: FormData) {
   }
 
   const fields = parseMediaPostForm(formData);
+  const coordinates = await resolveCoordinates(fields);
 
-  const { error } = await supabase.from("media_posts").update(fields).eq("id", postId);
+  const { error } = await supabase
+    .from("media_posts")
+    .update({ ...fields, ...coordinates })
+    .eq("id", postId);
 
   if (error) {
     throw new Error(`記事の更新に失敗しました: ${error.message}`);
