@@ -3,18 +3,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { findAreaByName, SITE_NAME, SITE_URL } from "@/lib/site";
 import type { MediaPost } from "@/lib/types";
+import PostCard from "../../PostCard";
 import LikeButton from "./LikeButton";
 import ShareButtons from "./ShareButtons";
 
+// 公開記事は誰でも、非公開(下書き)はログイン中の管理者本人のみ閲覧できる。
+// この絞り込みはデータベースの行レベルセキュリティ(RLS)が行うため、
+// ここでstatusの条件は付けない。非公開記事は管理者のプレビューとして表示される。
 async function getPost(slug: string) {
   const supabase = await createServerSupabaseClient();
   const { data: post } = await supabase
     .from("media_posts")
     .select("*")
     .eq("slug", slug)
-    .eq("status", "published")
     .maybeSingle();
   return post;
 }
@@ -120,6 +123,9 @@ export async function generateMetadata({
   return {
     title,
     description,
+    alternates: { canonical: `${SITE_URL}/trimmers/${post.slug}` },
+    // 非公開(プレビュー)状態のページが誤って検索エンジンに載らないようにする。
+    ...(post.status !== "published" && { robots: { index: false, follow: false } }),
     openGraph: {
       title,
       description,
@@ -136,13 +142,15 @@ export async function generateMetadata({
   };
 }
 
-// 検索エンジン向けの構造化データ(記事+店舗情報)。
+// 検索エンジン向けの構造化データ(記事+店舗情報+パンくず)。
 function StructuredData({ post }: { post: MediaPost }) {
   const article = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
     datePublished: post.published_at,
+    dateModified: post.published_at,
+    ...(post.photo_url && { image: post.photo_url }),
     author: { "@type": "Organization", name: SITE_NAME },
     publisher: { "@type": "Organization", name: SITE_NAME },
     mainEntityOfPage: `${SITE_URL}/trimmers/${post.slug}`,
@@ -158,6 +166,24 @@ function StructuredData({ post }: { post: MediaPost }) {
     ...(post.price_range && { priceRange: post.price_range }),
   };
 
+  const area = findAreaByName(post.area);
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: SITE_NAME, item: SITE_URL },
+      ...(area
+        ? [{ "@type": "ListItem", position: 2, name: area.name, item: `${SITE_URL}/area/${area.slug}` }]
+        : []),
+      {
+        "@type": "ListItem",
+        position: area ? 3 : 2,
+        name: post.title,
+        item: `${SITE_URL}/trimmers/${post.slug}`,
+      },
+    ],
+  };
+
   return (
     <>
       <script
@@ -167,6 +193,10 @@ function StructuredData({ post }: { post: MediaPost }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(business) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
       />
     </>
   );
@@ -287,8 +317,44 @@ export default async function TrimmerArticlePage({
     notFound();
   }
 
+  // 同じエリアの他の公開記事(最大4件)を関連記事として表示する。
+  const supabase = await createServerSupabaseClient();
+  const { data: relatedPosts } = await supabase
+    .from("media_posts")
+    .select("*")
+    .eq("status", "published")
+    .eq("area", post.area)
+    .neq("id", post.id)
+    .order("published_at", { ascending: false })
+    .limit(4);
+
+  const area = findAreaByName(post.area);
+
   return (
     <article className="space-y-8">
+      <nav className="text-xs text-gray-400">
+        <Link href="/" className="hover:text-amber-700">
+          トップ
+        </Link>
+        {area && (
+          <>
+            <span className="mx-1">›</span>
+            <Link href={`/area/${area.slug}`} className="hover:text-amber-700">
+              {area.name}
+            </Link>
+          </>
+        )}
+        <span className="mx-1">›</span>
+        <span className="text-gray-600">{post.trimmer_name}さん</span>
+      </nav>
+
+      {post.status !== "published" && (
+        <div className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-medium text-orange-800">
+          非公開プレビュー表示中 — このページはログイン中の管理者にしか見えません。
+          公開するには管理画面の「公開記事」一覧から「公開する」を押してください。
+        </div>
+      )}
+
       <StructuredData post={post} />
 
       <ProfileCard post={post} />
@@ -325,9 +391,25 @@ export default async function TrimmerArticlePage({
         <ReservationButtons post={post} />
       </div>
 
+      {relatedPosts && relatedPosts.length > 0 && (
+        <section>
+          <h2 className="mb-4 border-b border-amber-200 pb-2 text-lg font-bold text-gray-900">
+            {post.area}の他のトリマーさん
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {relatedPosts.map((relatedPost) => (
+              <PostCard key={relatedPost.id} post={relatedPost} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <div>
-        <Link href="/" className="text-sm font-medium text-amber-700 hover:text-amber-900">
-          ← 他のトリマーさんの記事を見る
+        <Link
+          href={area ? `/area/${area.slug}` : "/"}
+          className="text-sm font-medium text-amber-700 hover:text-amber-900"
+        >
+          ← {area ? `${area.name}のトリマーさん一覧へ` : "他のトリマーさんの記事を見る"}
         </Link>
       </div>
     </article>
