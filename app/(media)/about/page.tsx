@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MEDIA_AREAS, SITE_NAME, SITE_URL } from "@/lib/site";
+import { CONTACT_EMAIL, CONTACT_INSTAGRAM_URL, MEDIA_AREAS, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME}について | このサイトの考え方`,
@@ -55,8 +55,34 @@ export default function AboutPage() {
         </h2>
         <p className="text-sm leading-relaxed text-gray-600">
           {SITE_NAME}
-          では、掲載を希望されるトリマーさん・トリミングサロンを募集しています。インタビューはチャット形式で、お好きな時間に回答いただけます。ご興味のある方は、当サイトからご案内を受け取った担当者までご連絡ください。
+          では、掲載を希望されるトリマーさん・トリミングサロンを募集しています。インタビューはチャット形式で、お好きな時間に回答いただけます。ご興味のある方は、下記の連絡先までお気軽にご連絡ください。
         </p>
+      </section>
+
+      <section>
+        <h2 className="mb-3 border-b border-amber-200 pb-2 text-lg font-bold text-gray-900">
+          お問い合わせ
+        </h2>
+        <ul className="space-y-2 text-sm">
+          <li>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="text-amber-700 underline underline-offset-2 hover:text-amber-900"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          </li>
+          <li>
+            <a
+              href={CONTACT_INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-700 underline underline-offset-2 hover:text-amber-900"
+            >
+              Instagram: @uchi_no_trimmer_san
+            </a>
+          </li>
+        </ul>
       </section>
 
       <div>

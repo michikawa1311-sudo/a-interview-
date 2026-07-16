@@ -6,6 +6,7 @@ import InterviewLink from "./InterviewLink";
 import GenerateArticleButton from "./GenerateArticleButton";
 import CopyButton from "./CopyButton";
 import DeleteProjectButton from "./DeleteProjectButton";
+import ReviewsForm from "./ReviewsForm";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "回答待ち(まだ誰も回答していません)",
@@ -117,6 +118,14 @@ export default async function ProjectDetailPage({
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="rounded-lg border border-gray-200 bg-white p-5">
+        <h2 className="mb-1 text-sm font-semibold text-gray-900">お客様の口コミ(任意)</h2>
+        <p className="mb-3 text-xs text-gray-500">
+          Googleマップなどの口コミ文をコピペしておくと、記事生成時に内容が反映されます。
+        </p>
+        <ReviewsForm projectId={project.id} defaultValue={project.reviews ?? ""} />
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-5">

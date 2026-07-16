@@ -2,6 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function signOut() {
@@ -54,4 +55,30 @@ export async function createProject(formData: FormData) {
   }
 
   redirect(`/dashboard/${project.id}`);
+}
+
+// 記事生成時に反映するお客様の口コミ(Googleなどからのコピペを想定)を保存する。
+export async function saveProjectReviews(projectId: string, formData: FormData) {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const reviews = String(formData.get("reviews") ?? "").trim();
+
+  const { error } = await supabase
+    .from("projects")
+    .update({ reviews: reviews || null })
+    .eq("id", projectId);
+
+  if (error) {
+    throw new Error(`口コミの保存に失敗しました: ${error.message}`);
+  }
+
+  revalidatePath(`/dashboard/${projectId}`);
 }

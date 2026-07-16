@@ -8,6 +8,8 @@ import type { MediaPost } from "@/lib/types";
 import PostCard from "../../PostCard";
 import LikeButton from "./LikeButton";
 import ShareButtons from "./ShareButtons";
+import ReservationButtons from "./ReservationButtons";
+import ViewTracker from "./ViewTracker";
 
 // 公開記事は誰でも、非公開(下書き)はログイン中の管理者本人のみ閲覧できる。
 // この絞り込みはデータベースの行レベルセキュリティ(RLS)が行うため、
@@ -202,34 +204,6 @@ function StructuredData({ post }: { post: MediaPost }) {
   );
 }
 
-// 電話・公式サイトの予約ボタン。どちらも未設定の場合は何も表示しない。
-function ReservationButtons({ post }: { post: MediaPost }) {
-  if (!post.phone_number && !post.website_url) return null;
-
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row">
-      {post.phone_number && (
-        <a
-          href={`tel:${post.phone_number.replace(/[^\d+]/g, "")}`}
-          className="flex-1 rounded-full bg-amber-600 px-6 py-3 text-center text-sm font-bold text-white transition hover:bg-amber-700"
-        >
-          電話で予約する({post.phone_number})
-        </a>
-      )}
-      {post.website_url && (
-        <a
-          href={post.website_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 rounded-full border-2 border-amber-600 bg-white px-6 py-3 text-center text-sm font-bold text-amber-700 transition hover:bg-amber-50"
-        >
-          公式サイトで予約する
-        </a>
-      )}
-    </div>
-  );
-}
-
 // 記事上部に表示するトリマーのプロフィールカード。
 function ProfileCard({ post }: { post: MediaPost }) {
   return (
@@ -332,6 +306,8 @@ export default async function TrimmerArticlePage({
 
   return (
     <article className="space-y-8">
+      {post.status === "published" && <ViewTracker postId={post.id} />}
+
       <nav className="text-xs text-gray-400">
         <Link href="/" className="hover:text-amber-700">
           トップ
