@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { MEDIA_AREAS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import PostCard from "./PostCard";
+import HeroIllustration from "./HeroIllustration";
 
 const TOP_TITLE = `${SITE_NAME} | 人柄で選ぶ、東京のトリマー紹介メディア`;
 
@@ -50,14 +51,19 @@ export default async function MediaTopPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
 
-      <section className="text-center">
-        <h1 className="mb-3 text-2xl font-bold text-gray-900 sm:text-3xl">
-          人柄で選ぶ、うちの子のトリマー
-        </h1>
-        <p className="mx-auto max-w-xl text-sm leading-relaxed text-gray-600">
-          料金や場所だけでは分からない、トリマーさんの想いとこだわり。
-          大切な家族を任せられる人に出会えるように、世田谷区・杉並区のトリマーさんを一人ずつ丁寧に紹介します。
-        </p>
+      <section className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center sm:gap-10">
+        <HeroIllustration className="w-48 shrink-0 sm:w-56" />
+        <div className="text-center sm:text-left">
+          <h1 className="mb-3 text-2xl font-bold text-gray-900 sm:text-3xl">
+            人柄で選ぶ、
+            <br className="hidden sm:block" />
+            うちの子のトリマー
+          </h1>
+          <p className="max-w-xl text-sm leading-relaxed text-gray-600">
+            料金や場所だけでは分からない、トリマーさんの想いとこだわり。
+            大切な家族を任せられる人に出会えるように、世田谷区・杉並区のトリマーさんを一人ずつ丁寧に紹介します。
+          </p>
+        </div>
       </section>
 
       {allPosts.length === 0 ? (

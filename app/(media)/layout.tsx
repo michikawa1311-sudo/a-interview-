@@ -8,7 +8,14 @@ export default function MediaLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-amber-50/40">
       <header className="border-b border-amber-100 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5">
-          <Link href="/" className="text-xl font-bold text-amber-900">
+          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-amber-900">
+            <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" fill="#d97706" aria-hidden="true">
+              <ellipse cx="12" cy="15.5" rx="5" ry="4.5" />
+              <circle cx="6" cy="10" r="2.4" />
+              <circle cx="10" cy="7" r="2.4" />
+              <circle cx="14" cy="7" r="2.4" />
+              <circle cx="18" cy="10" r="2.4" />
+            </svg>
             うちのトリマーさん
           </Link>
           <p className="hidden text-xs text-amber-700 sm:block">
