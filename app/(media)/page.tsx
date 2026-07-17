@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import Image from "next/image";
 import { MEDIA_AREAS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import PostCard from "./PostCard";
-import HeroIllustration from "./HeroIllustration";
 
 const TOP_TITLE = `${SITE_NAME} | 人柄で選ぶ、東京のトリマー紹介メディア`;
 
@@ -52,7 +52,16 @@ export default async function MediaTopPage() {
       />
 
       <section className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center sm:gap-10">
-        <HeroIllustration className="w-48 shrink-0 sm:w-56" />
+        <div className="relative aspect-[4/3] w-full max-w-xs shrink-0 overflow-hidden rounded-2xl border border-amber-100 shadow-sm sm:w-72">
+          <Image
+            src="/hero-dog.webp"
+            alt="飼い主さんに抱っこされた、トリミングされたふわふわのトイプードル"
+            fill
+            priority
+            sizes="(max-width: 640px) 100vw, 288px"
+            className="object-cover object-[62%_45%]"
+          />
+        </div>
         <div className="text-center sm:text-left">
           <h1 className="mb-3 text-2xl font-bold text-gray-900 sm:text-3xl">
             人柄で選ぶ、
